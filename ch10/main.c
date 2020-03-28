@@ -12,7 +12,8 @@ int main(int argc, char **argv)
     mpca_lang(MPCA_LANG_DEFAULT,
               "                                         \
     number : /-?[0-9]+/ ;                               \
-    symbol : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/ ;         \
+    symbol : \"list\" | \"head\" | \"tail\" | \"eval\"  \
+             | \"join\" | '+' | '-' | '*' | '/' ;       \
     sexpr  : '(' <expr>* ')' ;                          \
     qexpr  : '{' <expr>* '}' ;                          \
     expr   : <number> | <symbol> | <sexpr> | <qexpr> ;  \
