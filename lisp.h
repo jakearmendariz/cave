@@ -107,6 +107,9 @@ lval *lval_join(lval *x, lval *y);
 
 lval *lval_copy(lval *v);
 
+//calls user functions
+lval* lval_call(lenv* e, lval* f, lval* a);
+
 //builtin function lookup, uses the built in class, uses correct function
 lval *builtin(lenv *e, lval *a, char *func);
 
