@@ -1,5 +1,6 @@
 #include "lval.h"
-
+//cc -std=c99 -Wall mpc.c lval.c builtin.c env.c main.c -ledit -o run
+//./run
 int main(int argc, char **argv)
 {
     mpc_parser_t *Number = mpc_new("number");
@@ -20,6 +21,10 @@ int main(int argc, char **argv)
   ",
               Number, Symbol, Sexpr, Qexpr, Expr, Lispy);
 
+    //Creates enviorment
+    lenv *e = lenv_new();
+    //Adds functions
+    lenv_add_builtins(e);
     while (1)
     {
         char *input = readline("lispy: ");
@@ -35,7 +40,7 @@ int main(int argc, char **argv)
         mpc_result_t r;
         if (mpc_parse("<stdin>", input, Lispy, &r))
         {
-            lval *x = lval_eval(lval_read(r.output));
+            lval *x = lval_eval(e, lval_read(r.output));
             lval_println(x);
             lval_del(x);
         }
@@ -47,7 +52,7 @@ int main(int argc, char **argv)
         }
         free(input);
     }
-
+    lenv_del(e);
     mpc_cleanup(4, Number, Symbol, Sexpr, Qexpr, Expr, Lispy);
     return 0;
 }

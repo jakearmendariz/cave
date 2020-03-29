@@ -1,5 +1,13 @@
 #include "lval.h"
 
+void print(char *s){
+    printf("%s\n",s);
+}
+
+void pint(int i){
+    printf("%d\n",i);
+}
+
 // construct a pointer to a new number lisp value
 lval *lval_num(long x)
 {
@@ -10,12 +18,21 @@ lval *lval_num(long x)
 }
 
 //lval lval error
-lval *lval_err(char *m)
+lval *lval_err(char *fmt,...)
 {
     lval *v = (lval *)malloc(sizeof(lval));
     v->type = LVAL_ERR;
-    v->err = (char *)malloc(strlen(m) + 1);
-    strcpy(v->err, m);
+
+    va_list va;
+    va_start(va, fmt);
+
+    v->err = malloc(512);
+
+    vsnprintf(v->err, 511, fmt, va);
+
+    v->err = realloc(v->err, strlen(v->err)+1);
+
+    va_end(va);
     return v;
 }
 
@@ -26,6 +43,14 @@ lval *lval_sym(char *m)
     v->type = LVAL_SYM;
     v->sym = (char *)malloc(strlen(m) + 1);
     strcpy(v->sym, m);
+    return v;
+}
+
+lval *lval_fun(lbuiltin func)
+{
+    lval *v = malloc(sizeof(lval));
+    v->type = LVAL_FUN;
+    v->fun = func;
     return v;
 }
 
@@ -49,6 +74,19 @@ lval *lval_qexpr(void)
     return v;
 }
 
+char* ltype_name(int t) {
+  switch(t) {
+    case LVAL_FUN: return "Function";
+    case LVAL_NUM: return "Number";
+    case LVAL_ERR: return "Error";
+    case LVAL_SYM: return "Symbol";
+    case LVAL_SEXPR: return "S-Expression";
+    case LVAL_QEXPR: return "Q-Expression";
+    default: return "Unknown";
+  }
+}
+
+
 void lval_del(lval *v)
 {
     switch (v->type)
@@ -70,7 +108,11 @@ void lval_del(lval *v)
         }
         free(v->cell);
         break;
+    case LVAL_FUN:
+        //Do nothing
+        break;
     }
+
     free(v);
 }
 
@@ -150,22 +192,30 @@ void lval_expr_print(lval *v, char open, char close);
 
 void lval_print(lval *v)
 {
+    
     switch (v->type)
     {
     case LVAL_NUM:
+        //printf("printing lisp value:");
         printf("%li", v->num);
         break;
     case LVAL_ERR:
         printf("Error: %s", v->err);
         break;
     case LVAL_SYM:
+        //printf("printing lisp symbol:");
         printf("%s", v->sym);
         break;
     case LVAL_SEXPR:
+        //printf("printing Symbol Expression:");
         lval_expr_print(v, '(', ')');
         break;
     case LVAL_QEXPR:
+        //printf("printing Quote Expression:");
         lval_expr_print(v, '{', '}');
+        break;
+    case LVAL_FUN:
+        printf("<function>");
         break;
     }
 }
@@ -188,54 +238,64 @@ void lval_expr_print(lval *v, char open, char close)
         }
     }
     putchar(close);
+    return;
 }
 
-lval *lval_eval_sexpr(lval *v)
+lval *lval_eval(lenv *e, lval *v)
 {
-    //evalutate children
+    if (v->type == LVAL_SYM)
+    {
+        lval *x = lenv_get(e, v);
+        //printf("symbol:%s\n", v->sym);
+        lval_del(v);
+        //lval_println(v);
+        return x;
+    }
+    // Evaluate S-expressions
+    if (v->type == LVAL_SEXPR)
+    {
+        //If it has any children, evaluate
+        return lval_eval_sexpr(e, v);
+    }
+    //else
+    return v;
+}
+
+//called inside of eval function
+lval *lval_eval_sexpr(lenv *e, lval *v)
+{
     for (int i = 0; i < v->count; i++)
     {
-        v->cell[i] = lval_eval(v->cell[i]);
-        //Error checking
+        v->cell[i] = lval_eval(e, v->cell[i]);
+    }
+
+    for (int i = 0; i < v->count; i++)
+    {
         if (v->cell[i]->type == LVAL_ERR)
         {
-            return lval_take(v, i);
+            return lval_take(v, 0);
         }
     }
-
     if (v->count == 0)
     {
-        return v;
+        return 0;
     }
-
-    if (v->count == 1)
+    else if (v->count == 1)
     {
         return lval_take(v, 0);
     }
 
     lval *f = lval_pop(v, 0);
-    if (f->type != LVAL_SYM)
+    if (f->type != LVAL_FUN)
     {
-        lval_del(f);
         lval_del(v);
-        return lval_err("S-expression Does not start with symbol!");
+        lval_del(f);
+        return lval_err("First element is not a function");
     }
 
-    lval *result = builtin(v, f->sym);
+    lval *result = f->fun(e, v);
     lval_del(f);
     return result;
-}
-
-lval *lval_eval(lval *v)
-{
-    // Evaluate S-expressions
-    if (v->type == LVAL_SEXPR)
-    {
-        //If it has any children, evaluate
-        return lval_eval_sexpr(v);
-    }
-    //else
-    return v;
 }
 //int i indicates which child to pop
 //removes the element, moves array over
@@ -270,5 +330,42 @@ lval *lval_join(lval *x, lval *y)
     }
 
     lval_del(y);
+    return x;
+}
+
+
+lval *lval_copy(lval *v)
+{
+    lval *x = malloc(sizeof(lval));
+    x->type = v->type;
+
+    switch (v->type)
+    {
+    case LVAL_NUM:
+        x->num = v->num;
+        break;
+    case LVAL_ERR:
+        x->err = malloc(sizeof(v->err) + 1);
+        strcpy(x->err, v->err);
+        break;
+    case LVAL_SYM:
+        x->sym = malloc(sizeof(v->sym) + 1);
+        strcpy(x->sym, v->sym);
+        break;
+    case LVAL_SEXPR:
+    //Do the same for q and s expressions
+    case LVAL_QEXPR:
+        x->count = v->count;
+        //Loop through recursivly adding each node, works from root to leaves
+        x->cell = malloc(sizeof(lval*) * x->count);
+        for (int i = 0; i < x->count; i++)
+        {
+            x->cell[i] = lval_copy(v->cell[i]);
+        }
+        break;
+    case LVAL_FUN:
+        x->fun = v->fun;
+        break;
+    }
     return x;
 }
