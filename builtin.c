@@ -1,5 +1,5 @@
 
-#include "lval.h"
+#include "lisp.h"
 #define error_message(args, cond, fmt,...)          \
     if (!(cond))                                    \
     {                                               \
@@ -177,25 +177,57 @@ lval *builtin_div(lenv *e, lval *a)
     return builtin_op(e, a, "/");
 }
 
+lval* builtin_var(lenv* e, lval* a, char* func){
+    error_message(a, a->type != LVAL_QEXPR, "Error: to define a function or variable please add inbetween {}");
+
+    lval* syms = a->cell[0];
+    for(int i = 0; i < syms->count; i++){
+        error_message(a, (syms->cell[i]->type == LVAL_SYM),
+      "Function '%s' cannot define non-symbol. "
+      "Got %s, Expected %s.", func,
+      ltype_name(syms->cell[i]->type),
+      ltype_name(LVAL_SYM));
+    }
+
+    error_message(a, (syms->count == a->count-1),
+    "Function '%s' passed too many arguments for symbols. "
+    "Got %i, Expected %i.", func, syms->count, a->count-1);
+
+    for(int i = 0; i < syms->count; i++){
+        /* If 'def' define in globally. If 'put' define in locally */
+        if (strcmp(func, "def") == 0) {
+            lenv_def(e, syms->cell[i], a->cell[i+1]);
+        }
+    
+        if (strcmp(func, "=")   == 0) {
+            lenv_put(e, syms->cell[i], a->cell[i+1]);
+        }
+    }
+    lval_del(a);
+    return lval_sexpr();
+}
+
+lval* builtin_put(lenv* e, lval *a){
+    return builtin_var(e, a, "put");
+}
+
 //Define
 lval* builtin_def(lenv* e, lval* a) {
+    return builtin_var(e, a, "def");
+    /**
   error_message(a, a->cell[0]->type == LVAL_QEXPR,
     "Function 'def' passed incorrect type!");
 
-  /* First argument is symbol list */
   lval* syms = a->cell[0];
-  /* Ensure all elements of first list are symbols */
   for (int i = 0; i < syms->count; i++) {
     lval_println(syms->cell[i]);
     error_message(a, syms->cell[i]->type == LVAL_SYM,
       "Function 'def' cannot define non-symbol");
   }
-  /* Check correct number of symbols and values */
   error_message(a, syms->count == a->count-1,
     "Function 'def' cannot define incorrect "
     "number of values to symbols");
 
-  /* Assign copies of values to symbols */
   for (int i = 0; i < syms->count; i++) {
     lval_println(a->cell[i+1]);
     lenv_put(e, syms->cell[i], a->cell[i+1]);
@@ -204,4 +236,25 @@ lval* builtin_def(lenv* e, lval* a) {
   lval_del(a);
   
   return lval_sexpr();
+  */
+}
+
+lval* builtin_lambda(lenv* e, lval* a){
+    error_message(a, a->count == 2,
+                  "Function 'lambda' needs two arguments");
+    error_message(a, a->cell[0]->type == LVAL_QEXPR,
+                  "Type needs to be quote expressiomn for lambda function. Not a %s", ltype_name(a->cell[0]->type));
+
+    //check first q expressions contains only symbols
+    for (int i = 0; i < a->cell[0]->count; i++) {
+        error_message(a, (a->cell[0]->cell[i]->type == LVAL_SYM),
+        "Cannot define non-symbol. Got %s, Expected %s.",
+        ltype_name(a->cell[0]->cell[i]->type),ltype_name(LVAL_SYM));
+    }
+
+    lval* formals = lval_pop(a, 0);
+    lval* body = lval_pop(a, 0);
+    lval_del(a);
+
+    return lval_lambda(formals, body);
 }

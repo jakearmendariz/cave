@@ -1,4 +1,4 @@
-#include "lval.h"
+#include "lisp.h"
 //cc -std=c99 -Wall mpc.c lval.c builtin.c env.c main.c -ledit -o run
 //./run
 int main(int argc, char **argv)
@@ -20,11 +20,14 @@ int main(int argc, char **argv)
     lispy  : /^/ <expr>* /$/ ;                          \
   ",
               Number, Symbol, Sexpr, Qexpr, Expr, Lispy);
-
-    //Creates enviorment
+    puts("Lispy Version 0.0.0.0.8");
+    puts("Enter quit to exit\n");
+    //Creates environment
     lenv *e = lenv_new();
+    print("created environment");
     //Adds functions
     lenv_add_builtins(e);
+    print("added builtins");
     while (1)
     {
         char *input = readline("lispy: ");

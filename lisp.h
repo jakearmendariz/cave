@@ -1,10 +1,10 @@
-#ifndef lval_h
+#ifndef lisp_h
 
-#define lval_h
+#define lisp_h
 #include <stdlib.h>
 #include "mpc.h"
 #include <editline/readline.h>
-//#include "builtin.h"
+#include<stdio.h>
 
 void print(char *s);
 
@@ -36,7 +36,12 @@ struct lval
     //Error and symbol have a string representation
     char *err;
     char *sym;
-    lbuiltin fun;
+
+    //function
+    lbuiltin builtin;
+    lenv* env;
+    lval* formals;
+    lval* body;
 
     //keeps track of how many lval
     int count;
@@ -45,6 +50,7 @@ struct lval
 
 struct lenv
 {
+    lenv* par;
     int count;
     char **syms;
     lval **vals;
@@ -71,7 +77,7 @@ lval *lval_sexpr();
 lval *lval_qexpr(void);
 
 //lval function
-lval *lval_fun(lbuiltin func);
+lval *lval_builtin(lbuiltin func);
 
 //Specifies what each kind is
 char* ltype_name(int t);
@@ -83,6 +89,8 @@ lval *lval_read_num(mpc_ast_t *t);
 lval *lval_add(lval *v, lval *x);
 
 lval *lval_read(mpc_ast_t *t);
+
+lval* lval_lambda(lval* formals, lval* body);
 
 void lval_expr_print(lval *v, char open, char close);
 
@@ -126,8 +134,13 @@ void lenv_add_builtin(lenv *e, char *name, lbuiltin func);
 
 void lenv_add_builtins(lenv *e);
 
-//Creates a function from a
+lval* builtin_lambda(lenv* e, lval* a);
+
+lval* builtin_var(lenv* e, lval* a, char* func);
+
 lval* builtin_def(lenv* e, lval* a);
+
+lval* builtin_put(lenv* e, lval* a);
 
 //Enviorment function
 lenv *lenv_new(void);
@@ -137,5 +150,13 @@ void lenv_del(lenv *e);
 lval *lenv_get(lenv *e, lval *k);
 
 void lenv_put(lenv *e, lval *k, lval *v);
+
+lenv* lenv_copy(lenv* e);
+
+//Puts in the global parent
+void lenv_def(lenv* e, lval* k, lval* v);
+
+//registers all assignment, global or local variables
+lval* builtin_var(lenv* e, lval* a, char* func);
 
 #endif

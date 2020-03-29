@@ -1,12 +1,6 @@
-#include "lval.h"
+//LispValue.c
+#include "lisp.h"
 
-void print(char *s){
-    printf("%s\n",s);
-}
-
-void pint(int i){
-    printf("%d\n",i);
-}
 
 // construct a pointer to a new number lisp value
 lval *lval_num(long x)
@@ -46,11 +40,11 @@ lval *lval_sym(char *m)
     return v;
 }
 
-lval *lval_fun(lbuiltin func)
+lval *lval_builtin(lbuiltin func)
 {
     lval *v = malloc(sizeof(lval));
     v->type = LVAL_FUN;
-    v->fun = func;
+    v->builtin = func;
     return v;
 }
 
@@ -109,7 +103,11 @@ void lval_del(lval *v)
         free(v->cell);
         break;
     case LVAL_FUN:
-        //Do nothing
+        if(!v->builtin){
+            lenv_del(v->env);
+            lval_del(v->formals);
+            lval_del(v->body);
+        }
         break;
     }
 
@@ -125,6 +123,7 @@ lval *lval_read_num(mpc_ast_t *t)
     return errno != ERANGE ? lval_num(x) : lval_err("invalid number");
 }
 
+//adds x to the list of cells
 lval *lval_add(lval *v, lval *x)
 {
     v->count++;
@@ -135,7 +134,6 @@ lval *lval_add(lval *v, lval *x)
 
 lval *lval_read(mpc_ast_t *t)
 {
-
     /* If Symbol or Number return conversion to that type */
     if (strstr(t->tag, "number"))
     {
@@ -215,7 +213,12 @@ void lval_print(lval *v)
         lval_expr_print(v, '{', '}');
         break;
     case LVAL_FUN:
-        printf("<function>");
+        if (v->builtin) {
+            printf("<builtin>");
+        } else {
+            printf("(\\ "); lval_print(v->formals);
+            putchar(' '); lval_print(v->body); putchar(')');
+        }
         break;
     }
 }
@@ -293,11 +296,11 @@ lval *lval_eval_sexpr(lenv *e, lval *v)
         return lval_err("First element is not a function");
     }
 
-    lval *result = f->fun(e, v);
+    lval *result = f->builtin(e, v);
     lval_del(f);
     return result;
 }
-//int i indicates which child to pop
+//int i indicates which cell to pop
 //removes the element, moves array over
 //returned popped element
 lval *lval_pop(lval *v, int i)
@@ -364,8 +367,29 @@ lval *lval_copy(lval *v)
         }
         break;
     case LVAL_FUN:
-        x->fun = v->fun;
+        if (v->builtin) {
+            //if not null
+            x->builtin = v->builtin;
+        } else {
+            x->builtin = NULL;
+            x->env = lenv_copy(v->env);
+            x->formals = lval_copy(v->formals);
+            x->body = lval_copy(v->body);
+        }
         break;
     }
     return x;
+}
+
+lval* lval_lambda(lval* formals, lval* body) {
+    lval* v = malloc(sizeof(lval));
+    v->type = LVAL_FUN;
+
+    v->builtin = NULL;
+
+    v->env = lenv_new();
+
+    v->formals = formals;
+    v->body = body;
+    return v;
 }

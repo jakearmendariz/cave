@@ -1,4 +1,4 @@
-#include "lval.h"
+#include "lisp.h"
 //lisp enviorment
 /**
 * Enviorment
@@ -10,6 +10,7 @@
 lenv *lenv_new(void)
 {
     lenv *e = malloc(sizeof(lenv));
+    e->par = NULL;
     e->count = 0;
     e->syms = NULL;
     e->vals = NULL;
@@ -39,8 +40,12 @@ lval* lenv_get(lenv* e, lval* k) {
       return lval_copy(e->vals[i]);
     }
   }
-  /* If no symbol found return error */
-  return lval_err("Unbound Symbol '%s'", k->sym);
+  //if parent is not null, then check it for the symbol
+  if(e->par){
+      return lenv_get(e->par, k);
+  }else{//No symbol found in parent
+    return lval_err("Unbound Symbol '%s'", k->sym);
+  }
 }
 
 //Put in k symbol and v value
@@ -65,10 +70,38 @@ void lenv_put(lenv *e, lval *k, lval *v)
     strcpy(e->syms[e->count - 1], k->sym);
 }
 
+
+//Put into the parent's (root) global enviorment
+void lenv_def(lenv* e, lval* k, lval* v){
+    //iterate while e has a parent
+    while(e->par){
+        e = e->par;
+    }
+    //put value in the global enviorment
+    lenv_put(e, k, v);
+}
+
+//copy
+lenv* lenv_copy(lenv* e){
+    lenv* n = malloc(sizeof(lenv));
+    n->par = e->par;
+    n->count = e->count;
+    n->syms = malloc(sizeof(char*) * n->count);
+    n->vals = malloc(sizeof(lval*) * n->count);
+    for (int i = 0; i < e->count; i++) {
+        n->syms[i] = malloc(strlen(e->syms[i]) + 1);
+        strcpy(n->syms[i], e->syms[i]);
+        n->vals[i] = lval_copy(e->vals[i]);
+    }
+    return n;
+}
+
+
+
 void lenv_add_builtin(lenv *e, char *name, lbuiltin func)
 {
     lval *k = lval_sym(name);
-    lval *v = lval_fun(func);
+    lval *v = lval_builtin(func);
     lenv_put(e, k, v);
     lval_del(k);
     lval_del(v);
@@ -76,6 +109,7 @@ void lenv_add_builtin(lenv *e, char *name, lbuiltin func)
 
 void lenv_add_builtins(lenv *e)
 {
+    print("\tadding list functions");
     /* List Functions */
     lenv_add_builtin(e, "list", builtin_list);
     lenv_add_builtin(e, "head", builtin_head);
@@ -83,12 +117,18 @@ void lenv_add_builtins(lenv *e)
     lenv_add_builtin(e, "eval", builtin_eval);
     lenv_add_builtin(e, "join", builtin_join);
 
+    print("\tadding math functions");
     /* Mathematical Functions */
     lenv_add_builtin(e, "+", builtin_add);
     lenv_add_builtin(e, "-", builtin_sub);
     lenv_add_builtin(e, "*", builtin_mul);
     lenv_add_builtin(e, "/", builtin_div);
 
+    print("\tadding variable functions");
     /* Variable Functions */
     lenv_add_builtin(e, "def",  builtin_def);
+    lenv_add_builtin(e, "=",   builtin_put);
+
+    /* Functions */
+    lenv_add_builtin(e, "\\", builtin_lambda);
 }
