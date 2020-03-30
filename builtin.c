@@ -1,12 +1,27 @@
 
 #include "lisp.h"
-#define error_message(args, cond, fmt,...)          \
+
+#define assert(args, cond, fmt,...)          \
     if (!(cond))                                    \
     {                                               \
         lval* err = lval_err(fmt, ##__VA_ARGS__);   \
         lval_del(args);                             \
         return err;                                 \
     }
+#define assert_type(func, args, index, expect) \
+  assert(args, args->cell[index]->type == expect, \
+    "Function '%s' passed incorrect type for argument %i. Got %s, Expected %s.", \
+    func, index, ltype_name(args->cell[index]->type), ltype_name(expect))
+
+#define assert_num(func, args, num) \
+  assert(args, args->count == num, \
+    "Function '%s' passed incorrect number of arguments. Got %i, Expected %i.", \
+    func, args->count, num)
+
+#define assert_not_empty(func, args, index) \
+  assert(args, args->cell[index]->count != 0, \
+    "Function '%s' passed {} for argument %i.", func, index);
+ 
 //Built in operation
 lval *builtin_op(lenv *e, lval *a, char *op)
 {
@@ -65,9 +80,9 @@ lval *builtin_op(lenv *e, lval *a, char *op)
 
 lval *builtin_head(lenv *e, lval *a)
 {
-    error_message(a, a->count == 1, "Function 'head' passed too many arguments. Got %i, Expected %i", a->count, 1);
-    error_message(a, a->cell[0]->type == LVAL_QEXPR, "Function 'head' passed incorrect type!");
-    error_message(a, a->cell[0]->count != 0,
+    assert(a, a->count == 1, "Function 'head' passed too many arguments. Got %i, Expected %i", a->count, 1);
+    assert(a, a->cell[0]->type == LVAL_QEXPR, "Function 'head' passed incorrect type!");
+    assert(a, a->cell[0]->count != 0,
                   "Function 'head' passed {}!");
 
     lval *v = lval_take(a, 0);
@@ -80,11 +95,11 @@ lval *builtin_head(lenv *e, lval *a)
 
 lval *builtin_tail(lenv *e, lval *a)
 {
-    error_message(a, a->count == 1,
+    assert(a, a->count == 1,
                   "Function 'tail' passed too many arguments. Got %i, Expected %i", a->count, 1);
-    error_message(a, a->cell[0]->type == LVAL_QEXPR,
+    assert(a, a->cell[0]->type == LVAL_QEXPR,
                   "Function 'tail' passed incorrect type!");
-    error_message(a, a->cell[0]->count != 0,
+    assert(a, a->cell[0]->count != 0,
                   "Function 'tail' passed {}!");
 
     lval *v = lval_take(a, 0);
@@ -101,9 +116,9 @@ lval *builtin_list(lenv *e, lval *a)
 
 lval *builtin_eval(lenv *e, lval *a)
 {
-    error_message(a, a->count == 1,
+    assert(a, a->count == 1,
                   "Function 'eval' passed too many arguments!");
-    error_message(a, a->cell[0]->type == LVAL_QEXPR,
+    assert(a, a->cell[0]->type == LVAL_QEXPR,
                   "Function 'eval' passed incorrect type!");
 
     lval *x = lval_take(a, 0);
@@ -115,7 +130,7 @@ lval *builtin_join(lenv *e, lval *a)
 {
     for (int i = 0; i < a->count; i++)
     {
-        error_message(a, a->cell[i]->type == LVAL_QEXPR, "Function 'join' passed incorrect type.");
+        assert(a, a->cell[i]->type == LVAL_QEXPR, "Function 'join' passed incorrect type.");
     }
     lval *x = lval_pop(a, 0);
 
@@ -177,19 +192,98 @@ lval *builtin_div(lenv *e, lval *a)
     return builtin_op(e, a, "/");
 }
 
+
+lval* builtin_if(lenv* e, lval* a){
+    assert_num("if", a, 3);
+    //Checks that the inputs are of the correct value
+    assert_type("if", a, 0, LVAL_NUM);
+    assert_type("if", a, 1, LVAL_QEXPR);
+    assert_type("if", a, 2, LVAL_QEXPR);
+
+    //Mark both expressions as evaluable
+    lval *x;
+    a->cell[1]->type = LVAL_SEXPR;
+    a->cell[2]->type = LVAL_SEXPR;
+
+    if(a->cell[0]->num){
+        //if condition is true evalue the first expression
+        x = lval_eval(e, lval_pop(a, 1));
+    }else{
+        x = lval_eval(e, lval_pop(a, 2));
+    }
+
+    lval_del(a);
+    return x;
+
+}
+
+lval* builtin_ord(lenv* e, lval* a, char* op){
+    assert(a, (a->count == 2), "Two arguments required");
+
+    int r = 0;
+    if (strcmp(op,"==")  == 0) {
+        if(a->cell[0]->type == LVAL_STR){
+            r = (strcmp(a->cell[0]->str, a->cell[1]->str) == 0);
+        }else{
+            r = (a->cell[0]->num ==  a->cell[1]->num);
+        }
+    }
+    else if (strcmp(op, "!=")  == 0) {
+        if(a->cell[0]->type == LVAL_STR){
+            r = (strcmp(a->cell[0]->str, a->cell[1]->str) != 0);
+        }else{
+            r = (a->cell[0]->num !=  a->cell[1]->num);
+        }
+    }
+    else if (strcmp(op, ">")  == 0) {
+        r = (a->cell[0]->num >  a->cell[1]->num);
+    }
+    else if (strcmp(op, "<")  == 0) {
+        r = (a->cell[0]->num <  a->cell[1]->num);
+    }
+    else if (strcmp(op, ">=") == 0) {
+        r = (a->cell[0]->num >= a->cell[1]->num);
+    }
+    else if (strcmp(op, "<=") == 0) {
+        r = (a->cell[0]->num <= a->cell[1]->num);
+    }
+    lval_del(a);
+    return lval_num(r);
+}
+
+lval* builtin_eq(lenv* e, lval* a){
+    return builtin_ord(e, a, "==");
+}
+
+lval* builtin_ne(lenv* e, lval* a){
+    return builtin_ord(e, a, "!=");
+}
+
+lval* builtin_gt(lenv* e, lval* a){
+    return builtin_ord(e, a, ">");
+}
+
+lval* builtin_lt(lenv* e, lval* a){
+    return builtin_ord(e, a, "<");
+}
+
+lval* builtin_ge(lenv* e, lval* a){
+    return builtin_ord(e, a, ">=");
+}
+
 lval* builtin_var(lenv* e, lval* a, char* func){
-    error_message(a, a->type != LVAL_QEXPR, "Error: to define a function or variable please add inbetween {}");
+    assert(a, a->type != LVAL_QEXPR, "Error: to define a function or variable please add inbetween {}");
 
     lval* syms = a->cell[0];
     for(int i = 0; i < syms->count; i++){
-        error_message(a, (syms->cell[i]->type == LVAL_SYM),
+        assert(a, (syms->cell[i]->type == LVAL_SYM),
       "Function '%s' cannot define non-symbol. "
       "Got %s, Expected %s.", func,
       ltype_name(syms->cell[i]->type),
       ltype_name(LVAL_SYM));
     }
 
-    error_message(a, (syms->count == a->count-1),
+    assert(a, (syms->count == a->count-1),
     "Function '%s' passed too many arguments for symbols. "
     "Got %i, Expected %i.", func, syms->count, a->count-1);
 
@@ -214,40 +308,18 @@ lval* builtin_put(lenv* e, lval *a){
 //Define
 lval* builtin_def(lenv* e, lval* a) {
     return builtin_var(e, a, "def");
-    /**
-  error_message(a, a->cell[0]->type == LVAL_QEXPR,
-    "Function 'def' passed incorrect type!");
-
-  lval* syms = a->cell[0];
-  for (int i = 0; i < syms->count; i++) {
-    lval_println(syms->cell[i]);
-    error_message(a, syms->cell[i]->type == LVAL_SYM,
-      "Function 'def' cannot define non-symbol");
-  }
-  error_message(a, syms->count == a->count-1,
-    "Function 'def' cannot define incorrect "
-    "number of values to symbols");
-
-  for (int i = 0; i < syms->count; i++) {
-    lval_println(a->cell[i+1]);
-    lenv_put(e, syms->cell[i], a->cell[i+1]);
-  }
-
-  lval_del(a);
-  
-  return lval_sexpr();
-  */
+   
 }
 
 lval* builtin_lambda(lenv* e, lval* a){
-    error_message(a, a->count == 2,
+    assert(a, a->count == 2,
                   "Function 'lambda' needs two arguments");
-    error_message(a, a->cell[0]->type == LVAL_QEXPR,
+    assert(a, a->cell[0]->type == LVAL_QEXPR,
                   "Type needs to be quote expressiomn for lambda function. Not a %s", ltype_name(a->cell[0]->type));
 
     //check first q expressions contains only symbols
     for (int i = 0; i < a->cell[0]->count; i++) {
-        error_message(a, (a->cell[0]->cell[i]->type == LVAL_SYM),
+        assert(a, (a->cell[0]->cell[i]->type == LVAL_SYM),
         "Cannot define non-symbol. Got %s, Expected %s.",
         ltype_name(a->cell[0]->cell[i]->type),ltype_name(LVAL_SYM));
     }
@@ -257,4 +329,66 @@ lval* builtin_lambda(lenv* e, lval* a){
     lval_del(a);
 
     return lval_lambda(formals, body);
+}
+
+lval* builtin_print(lenv* e, lval *a){
+    //print each argument followed by a spce
+    for(int i = 0; i < a->count; i++){
+        lval_print(a->cell[i]);
+        putchar(' ');
+    }
+    putchar('\n');
+    lval_del(a);
+
+    return lval_sexpr();
+}
+
+lval* builtin_error(lenv* e, lval* a) {
+  assert_num("error", a, 1);
+  assert_type("error", a, 0, LVAL_STR);
+
+  /* Construct Error from first argument */
+  lval* err = lval_err(a->cell[0]->str);
+
+  /* Delete arguments and return */
+  lval_del(a);
+  return err;
+}
+
+//Loads a file to run
+lval* builtin_load(lenv* e, lval* a) {
+    print("Loading file");
+    assert_num("load", a, 1);
+    assert_type("load", a, 0, LVAL_STR);
+
+    mpc_result_t r;
+    if(mpc_parse_contents(a->cell[0]->str, Lispy, &r)){
+        //read the contents
+        lval* expr = lval_read(r.output);
+        mpc_ast_delete(r.output);
+
+        //while there is more lines to evaluate
+        while(expr->count){
+            lval* x = lval_eval(e, lval_pop(expr, 0));
+            lval_println(x);
+            if(x->type == LVAL_ERR){
+                lval_println(x);
+            }
+            lval_del(x);
+        }
+
+        lval_del(expr);
+        lval_del(a);
+        return lval_sexpr();
+    }else{
+        char *err_msg = mpc_err_string(r.error);
+        mpc_err_delete(r.error);
+        /* Create new error message using it */
+        lval* err = lval_err("Could not load Library %s", err_msg);
+        free(err_msg);
+        lval_del(a);
+
+        /* Cleanup and return error */
+        return err;
+    }
 }

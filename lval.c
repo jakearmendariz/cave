@@ -11,6 +11,12 @@ lval *lval_num(long x)
     return v;
 }
 
+lval *lval_comment(){
+    lval *v = (lval *)malloc(sizeof(lval));
+    v->type = LVAL_COM;
+    return v;
+}
+
 //lval lval error
 lval *lval_err(char *fmt,...)
 {
@@ -37,6 +43,15 @@ lval *lval_sym(char *m)
     v->type = LVAL_SYM;
     v->sym = (char *)malloc(strlen(m) + 1);
     strcpy(v->sym, m);
+    return v;
+}
+
+//String
+lval* lval_str(char* s){
+    lval *v = malloc(sizeof(lval));
+    v->type = LVAL_STR;
+    v->str = malloc(strlen(s) +1);
+    strcpy(v->str, s);
     return v;
 }
 
@@ -76,6 +91,7 @@ char* ltype_name(int t) {
     case LVAL_SYM: return "Symbol";
     case LVAL_SEXPR: return "S-Expression";
     case LVAL_QEXPR: return "Q-Expression";
+    case LVAL_STR: return "String";
     default: return "Unknown";
   }
 }
@@ -109,8 +125,10 @@ void lval_del(lval *v)
             lval_del(v->body);
         }
         break;
+    case LVAL_STR:
+        free(v->str);
+        break;
     }
-
     free(v);
 }
 
@@ -126,14 +144,34 @@ lval *lval_read_num(mpc_ast_t *t)
 //adds x to the list of cells
 lval *lval_add(lval *v, lval *x)
 {
+    if(x->type == LVAL_COM){
+        return v;
+    }
     v->count++;
     v->cell = (lval **)realloc(v->cell, sizeof(lval *) * v->count);
     v->cell[v->count - 1] = x;
     return v;
 }
 
+lval *lval_read_str(mpc_ast_t *t){
+    /* Cut off the final quote character */
+    t->contents[strlen(t->contents)-1] = '\0';
+    /* Copy the string missing out the first quote character */
+    char* unescaped = malloc(strlen(t->contents+1)+1);
+    strcpy(unescaped, t->contents+1);
+    /* Pass through the unescape function */
+    unescaped = mpcf_unescape(unescaped);
+    /* Construct a new lval using the string */
+    lval* str = lval_str(unescaped);
+    /* Free the string and return */
+    free(unescaped);
+    return str;
+}
+
+
 lval *lval_read(mpc_ast_t *t)
 {
+    print(t->tag);
     /* If Symbol or Number return conversion to that type */
     if (strstr(t->tag, "number"))
     {
@@ -143,6 +181,17 @@ lval *lval_read(mpc_ast_t *t)
     {
         return lval_sym(t->contents);
     }
+    if (strstr(t->tag, "string"))
+    {
+        return lval_read_str(t);
+    }
+    if (strstr(t->tag, "comment"))
+    {
+        print("Comment detected in begining");
+        return lval_comment();
+    }
+
+   
 
     /* If root (>) or sexpr then create empty list */
     lval *x = NULL;
@@ -158,6 +207,13 @@ lval *lval_read(mpc_ast_t *t)
     {
         x = lval_qexpr();
     }
+    if (strstr(t->tag, "comment"))
+    {
+        x = lval_comment();
+        return x;
+    }
+    
+    
     /* Fill this list with any valid expression contained within */
     for (int i = 0; i < t->children_num; i++)
     {
@@ -181,6 +237,10 @@ lval *lval_read(mpc_ast_t *t)
         {
             continue;
         }
+        if (strstr(t->children[i]->tag, "comment")) 
+        { 
+            continue; 
+        }
         x = lval_add(x, lval_read(t->children[i]));
     }
     return x;
@@ -190,9 +250,12 @@ void lval_expr_print(lval *v, char open, char close);
 
 void lval_print(lval *v)
 {
-    
     switch (v->type)
     {
+     case LVAL_COM:
+        //printf("printing lisp value:");
+        print("Comment detected");
+        break;
     case LVAL_NUM:
         //printf("printing lisp value:");
         printf("%li", v->num);
@@ -203,6 +266,15 @@ void lval_print(lval *v)
     case LVAL_SYM:
         //printf("printing lisp symbol:");
         printf("%s", v->sym);
+        break;
+    case LVAL_STR:
+        printf("");
+        char* esc = malloc(strlen(v->str) + 1);
+        strcpy(esc, v->str);
+        print(esc);
+        esc = (char *)mpcf_unescape(esc);
+        printf("\"%s\"", esc);
+        free(esc);
         break;
     case LVAL_SEXPR:
         //printf("printing Symbol Expression:");
@@ -246,6 +318,11 @@ void lval_expr_print(lval *v, char open, char close)
 
 lval *lval_eval(lenv *e, lval *v)
 {
+
+    if(v->type == LVAL_COM){
+        print("Comment block in eval, assuming comment");
+        return v;
+    }
     if (v->type == LVAL_SYM)
     {
         lval *x = lenv_get(e, v);
@@ -355,6 +432,10 @@ lval *lval_copy(lval *v)
     case LVAL_SYM:
         x->sym = malloc(sizeof(v->sym) + 1);
         strcpy(x->sym, v->sym);
+        break;
+    case LVAL_STR:
+        x->str = malloc(sizeof(v->str) + 1);
+        strcpy(x->str, v->str);
         break;
     case LVAL_SEXPR:
     //Do the same for q and s expressions

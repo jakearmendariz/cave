@@ -109,7 +109,6 @@ void lenv_add_builtin(lenv *e, char *name, lbuiltin func)
 
 void lenv_add_builtins(lenv *e)
 {
-    print("\tadding list functions");
     /* List Functions */
     lenv_add_builtin(e, "list", builtin_list);
     lenv_add_builtin(e, "head", builtin_head);
@@ -117,18 +116,29 @@ void lenv_add_builtins(lenv *e)
     lenv_add_builtin(e, "eval", builtin_eval);
     lenv_add_builtin(e, "join", builtin_join);
 
-    print("\tadding math functions");
     /* Mathematical Functions */
     lenv_add_builtin(e, "+", builtin_add);
     lenv_add_builtin(e, "-", builtin_sub);
     lenv_add_builtin(e, "*", builtin_mul);
     lenv_add_builtin(e, "/", builtin_div);
 
-    print("\tadding variable functions");
     /* Variable Functions */
     lenv_add_builtin(e, "def",  builtin_def);
     lenv_add_builtin(e, "=",   builtin_put);
 
     /* Functions */
     lenv_add_builtin(e, "\\", builtin_lambda);
+
+    /* Comparison Functions */
+    lenv_add_builtin(e, "if", builtin_if);
+    lenv_add_builtin(e, "==", builtin_eq);
+    lenv_add_builtin(e, "!=", builtin_ne);
+    lenv_add_builtin(e, ">",  builtin_gt);
+    lenv_add_builtin(e, "<",  builtin_lt);
+    lenv_add_builtin(e, ">=", builtin_ge);
+
+    //string functions
+    lenv_add_builtin(e, "load",  builtin_load);
+    lenv_add_builtin(e, "error", builtin_error);
+    lenv_add_builtin(e, "print", builtin_print);
 }

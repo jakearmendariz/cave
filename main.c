@@ -1,36 +1,62 @@
 #include "lisp.h"
-//cc -std=c99 -Wall mpc.c lval.c builtin.c env.c main.c -ledit -o run
-//./run
+// cc -std=c99 -Wall mpc.c lval.c builtin.c env.c main.c -ledit -o run
+// ./run
 int main(int argc, char **argv)
 {
-    mpc_parser_t *Number = mpc_new("number");
-    mpc_parser_t *Symbol = mpc_new("symbol");
-    mpc_parser_t *Sexpr = mpc_new("sexpr");
-    mpc_parser_t *Qexpr = mpc_new("qexpr");
-    mpc_parser_t *Expr = mpc_new("expr");
-    mpc_parser_t *Lispy = mpc_new("lispy");
-
+    Number  = mpc_new("number");
+    Symbol  = mpc_new("symbol");
+    String  = mpc_new("string");
+    Comment = mpc_new("comment");
+    Sexpr   = mpc_new("sexpr");
+    Qexpr   = mpc_new("qexpr");
+    Expr    = mpc_new("expr");
+    Lispy   = mpc_new("lispy");
     mpca_lang(MPCA_LANG_DEFAULT,
-              "                                         \
-    number : /-?[0-9]+/ ;                               \
-    symbol : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/ ;         \
-    sexpr  : '(' <expr>* ')' ;                          \
-    qexpr  : '{' <expr>* '}' ;                          \
-    expr   : <number> | <symbol> | <sexpr> | <qexpr> ;  \
-    lispy  : /^/ <expr>* /$/ ;                          \
-  ",
-              Number, Symbol, Sexpr, Qexpr, Expr, Lispy);
-    puts("Lispy Version 0.0.0.0.8");
+    "                                              \
+        number  : /-?[0-9]+/ ;                       \
+        symbol  : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/ ; \
+        string  : /\"(\\\\.|[^\"])*\"/ ;             \
+        comment : /;[^\\r\\n]*/ ;                    \
+        sexpr   : '(' <expr>* ')' ;                  \
+        qexpr   : '{' <expr>* '}' ;                  \
+        expr    : <number>  | <symbol> | <string>    \
+                | <comment> | <sexpr>  | <qexpr>;    \
+        lispy   : /^/ <expr>* /$/ ;                  \
+    ",
+    Number, Symbol, String, Comment, Sexpr, Qexpr, Expr, Lispy);
+    puts("Lispy Version 0.0.0.1.4");
     puts("Enter quit to exit\n");
     //Creates environment
     lenv *e = lenv_new();
-    print("created environment");
+    print("Debug on:");
     //Adds functions
     lenv_add_builtins(e);
-    print("added builtins");
+
+    //Supplied with list of files 
+    if (argc >= 2) {
+        
+    for (int i = 1; i < argc; i++) {
+
+        lval* args = lval_add(lval_sexpr(), lval_str(argv[i]));
+
+        lval* x = builtin_load(e, args);
+
+        if (x->type == LVAL_ERR) { lval_println(x); }
+            lval_del(x);
+        }
+    }
+    
+    
     while (1)
     {
         char *input = readline("lispy: ");
+        if(strstr(input, "#")){
+            int i = strcspn (input,"#");
+            input[i] = '\0';
+        }
+        if(strlen(input) == 0){
+            continue;
+        }
 
         add_history(input);
         if (strcmp(input, "quit") == 0)
@@ -44,7 +70,7 @@ int main(int argc, char **argv)
         if (mpc_parse("<stdin>", input, Lispy, &r))
         {
             lval *x = lval_eval(e, lval_read(r.output));
-            lval_println(x);
+            //lval_println(x);
             lval_del(x);
         }
         else
@@ -56,6 +82,6 @@ int main(int argc, char **argv)
         free(input);
     }
     lenv_del(e);
-    mpc_cleanup(4, Number, Symbol, Sexpr, Qexpr, Expr, Lispy);
+    mpc_cleanup(4, Number, Symbol, String, Comment, Sexpr, Qexpr, Expr, Lispy);
     return 0;
 }

@@ -6,6 +6,17 @@
 #include <editline/readline.h>
 #include<stdio.h>
 
+
+//Parser declaration
+mpc_parser_t* Number; 
+mpc_parser_t* Symbol; 
+mpc_parser_t* String; 
+mpc_parser_t* Comment;
+mpc_parser_t* Sexpr;  
+mpc_parser_t* Qexpr;  
+mpc_parser_t* Expr; 
+mpc_parser_t* Lispy;
+
 void print(char *s);
 
 void pint(int i);
@@ -15,6 +26,8 @@ enum
     LVAL_ERR,
     LVAL_NUM,
     LVAL_SYM,
+    LVAL_STR,
+    LVAL_COM,
     LVAL_FUN,
     LVAL_SEXPR,
     LVAL_QEXPR
@@ -36,6 +49,7 @@ struct lval
     //Error and symbol have a string representation
     char *err;
     char *sym;
+    char* str;
 
     //function
     lbuiltin builtin;
@@ -70,6 +84,8 @@ lval *lval_err(char* fmt,...);
 //lval lval symvol
 lval *lval_sym(char *m);
 
+lval* lval_str(char* s);
+
 //lval lval s-expression
 lval *lval_sexpr();
 
@@ -85,6 +101,8 @@ char* ltype_name(int t);
 void lval_del(lval *v);
 
 lval *lval_read_num(mpc_ast_t *t);
+
+lval *lval_read_str(mpc_ast_t *t);
 
 lval *lval_add(lval *v, lval *x);
 
@@ -144,6 +162,24 @@ lval* builtin_var(lenv* e, lval* a, char* func);
 lval* builtin_def(lenv* e, lval* a);
 
 lval* builtin_put(lenv* e, lval* a);
+
+lval* builtin_if(lenv* e, lval* a);
+
+lval* builtin_eq(lenv* e, lval* a);
+
+lval* builtin_ne(lenv* e, lval* a);
+
+lval* builtin_gt(lenv* e, lval* a);
+
+lval* builtin_lt(lenv* e, lval* a);
+
+lval* builtin_ge(lenv* e, lval* a);
+
+lval* builtin_load(lenv* e, lval* a);
+
+lval* builtin_print(lenv* e, lval* a);
+
+lval* builtin_error(lenv* e, lval* a);
 
 //Enviorment function
 lenv *lenv_new(void);
