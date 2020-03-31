@@ -24,13 +24,14 @@ int main(int argc, char **argv)
         lispy   : /^/ <expr>* /$/ ;                  \
     ",
     Number, Symbol, String, Comment, Sexpr, Qexpr, Expr, Lispy);
-    puts("Lispy Version 0.0.0.1.4");
+    puts("Cave: The Programming Language");
     puts("Enter quit to exit\n");
     //Creates environment
     lenv *e = lenv_new();
     print("Debug on:");
     //Adds functions
     lenv_add_builtins(e);
+    builtin_load(e, lval_str("hello.a"));
 
     //Supplied with list of files 
     if (argc >= 2) {
@@ -48,7 +49,7 @@ int main(int argc, char **argv)
     else{
         while (1)
         {
-            char *input = readline("lispy: ");
+            char *input = readline("code: ");
             if(strstr(input, ";")){
                 int i = strcspn (input,";");
                 input[i] = '\0';
@@ -60,7 +61,7 @@ int main(int argc, char **argv)
             add_history(input);
             if (strcmp(input, "quit") == 0)
             {
-                printf("quiting program\n");
+                printf("Goodbye :)\n");
                 break;
             }
 
@@ -69,7 +70,9 @@ int main(int argc, char **argv)
             if (mpc_parse("<stdin>", input, Lispy, &r))
             {
                 lval *x = lval_eval(e, lval_read(r.output));
-                lval_println(x);
+                if(x->type == LVAL_ERR){
+                    lval_println(x);
+                }
                 lval_del(x);
             }
             else

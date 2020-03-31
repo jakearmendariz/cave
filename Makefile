@@ -1,15 +1,14 @@
 #
-#Assignment 3
-#Jake Armendariz 1650932
-#12B Bhatti
-#Makefile-- creates an executable: BST
+#Cave Programming Language
+#Jake Armendariz
+#Makefile-- creates an executable: cave
 # contains a valgrind under check
 # cleans
-ADT_NAME = tree
+ADT_NAME = cave
 SOURCES	 = lval.c	env.c	builtin.c	main.c	debug.c	mpc.c	
 OBJECTS	 = lval.o	env.o	builtin.o	main.o 	debug.o	mpc.o
 HEADERS	 = lisp.h	mpc.h
-EXEBIN	 = tree
+EXEBIN	 = cave
 FLAGS	 = -std=c99 -Wall 
 
 all: $(EXEBIN)

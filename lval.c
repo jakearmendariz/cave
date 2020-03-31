@@ -36,7 +36,7 @@ lval *lval_err(char *fmt,...)
     return v;
 }
 
-//lval lval symvol
+//lval lval symbol
 lval *lval_sym(char *m)
 {
     lval *v = (lval *)malloc(sizeof(lval));
@@ -171,8 +171,6 @@ lval *lval_read_str(mpc_ast_t *t){
 
 lval *lval_read(mpc_ast_t *t)
 {
-    print(t->tag);
-    pint(1);
     /* If Symbol or Number return conversion to that type */
     if (strstr(t->tag, "number"))
     {
@@ -180,6 +178,7 @@ lval *lval_read(mpc_ast_t *t)
     }
     if (strstr(t->tag, "symbol"))
     {
+        print("Symbol detected");
         return lval_sym(t->contents);
     }
     if (strstr(t->tag, "string"))
@@ -191,8 +190,6 @@ lval *lval_read(mpc_ast_t *t)
         print("Comment detected in begining");
         //return lval_comment();
     }
-
-    pint(2);
 
     /* If root (>) or sexpr then create empty list */
     lval *x = NULL;
@@ -208,7 +205,6 @@ lval *lval_read(mpc_ast_t *t)
     {
         x = lval_qexpr();
     }
-    pint(3);
     
     /* Fill this list with any valid expression contained within */
     for (int i = 0; i < t->children_num; i++)
@@ -240,7 +236,6 @@ lval *lval_read(mpc_ast_t *t)
         }
         x = lval_add(x, lval_read(t->children[i]));
     }
-    pint(4);
     return x;
 }
 
@@ -284,7 +279,7 @@ void lval_print(lval *v)
         break;
     case LVAL_FUN:
         if (v->builtin) {
-            printf("<builtin>");
+            printf("builtin function");
         } else {
             printf("(\\ "); lval_print(v->formals);
             putchar(' '); lval_print(v->body); putchar(')');
@@ -316,14 +311,14 @@ void lval_expr_print(lval *v, char open, char close)
 
 lval *lval_eval(lenv *e, lval *v)
 {
-    printf("type in eval:");
-    pint(v->type);
+    //printf("type in eval:");
     if(v->type == LVAL_COM){
         print("Comment block in eval, assuming comment");
         return v;
     }
     if (v->type == LVAL_SYM)
     {
+        print("symbol in eval");
         lval *x = lenv_get(e, v);
         //printf("symbol:%s\n", v->sym);
         lval_del(v);
@@ -344,13 +339,11 @@ lval *lval_eval(lenv *e, lval *v)
 //called inside of eval function
 lval *lval_eval_sexpr(lenv *e, lval *v)
 {
-    printf("count:");
-    pint(v->count);
+    //printf("count:");
     for (int i = 0; i < v->count; i++)
     {
         v->cell[i] = lval_eval(e, v->cell[i]);
     }
-    pint(1);
     for (int i = 0; i < v->count; i++)
     {
         if (v->cell[i]->type == LVAL_ERR)
@@ -358,16 +351,15 @@ lval *lval_eval_sexpr(lenv *e, lval *v)
             return lval_take(v, 0);
         }
     }
-     pint(2);
     if (v->count == 0)
     {
+        print("Comment, do nothing");
         return v;
     }
     else if (v->count == 1)
     {
         return lval_take(v, 0);
     }
-     pint(3);
     lval *f = lval_pop(v, 0);
     if (f->type != LVAL_FUN)
     {
@@ -499,12 +491,12 @@ lval* lval_call(lenv* e, lval* f, lval* a){
 
         lval* sym = lval_pop(f->formals, 0);
 
-        //Special case for '&'
-        if (f->formals->count > 0 && strcmp(sym->sym, "&") == 0) {
+        //Special case for ','
+        if (f->formals->count > 0 && strcmp(sym->sym, ",") == 0) {
             //Ensure & is followed by another symbol
             if(f->formals->count != 1){
                 lval_del(a);
-                return lval_err("Function format invalid. Symbol '&' not followed by single symbol");
+                return lval_err("Function format invalid. Symbol ',' not followed by single symbol");
             }
             lval* nsym = lval_pop(f->formals, 0);
             lenv_put(f->env, nsym, builtin_list(e, a));

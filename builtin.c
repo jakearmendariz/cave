@@ -322,6 +322,7 @@ lval* builtin_lambda(lenv* e, lval* a){
 
 lval* builtin_print(lenv* e, lval *a){
     //print each argument followed by a spce
+    lval_print(a);
     for(int i = 0; i < a->count; i++){
         lval_print(a->cell[i]);
         putchar(' ');
