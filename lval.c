@@ -172,6 +172,7 @@ lval *lval_read_str(mpc_ast_t *t){
 lval *lval_read(mpc_ast_t *t)
 {
     print(t->tag);
+    pint(1);
     /* If Symbol or Number return conversion to that type */
     if (strstr(t->tag, "number"))
     {
@@ -188,10 +189,10 @@ lval *lval_read(mpc_ast_t *t)
     if (strstr(t->tag, "comment"))
     {
         print("Comment detected in begining");
-        return lval_comment();
+        //return lval_comment();
     }
 
-   
+    pint(2);
 
     /* If root (>) or sexpr then create empty list */
     lval *x = NULL;
@@ -207,12 +208,7 @@ lval *lval_read(mpc_ast_t *t)
     {
         x = lval_qexpr();
     }
-    if (strstr(t->tag, "comment"))
-    {
-        x = lval_comment();
-        return x;
-    }
-    
+    pint(3);
     
     /* Fill this list with any valid expression contained within */
     for (int i = 0; i < t->children_num; i++)
@@ -239,10 +235,12 @@ lval *lval_read(mpc_ast_t *t)
         }
         if (strstr(t->children[i]->tag, "comment")) 
         { 
+            print("comment in read");
             continue; 
         }
         x = lval_add(x, lval_read(t->children[i]));
     }
+    pint(4);
     return x;
 }
 
@@ -254,7 +252,7 @@ void lval_print(lval *v)
     {
      case LVAL_COM:
         //printf("printing lisp value:");
-        print("Comment detected");
+        print("print comment");
         break;
     case LVAL_NUM:
         //printf("printing lisp value:");
@@ -318,7 +316,8 @@ void lval_expr_print(lval *v, char open, char close)
 
 lval *lval_eval(lenv *e, lval *v)
 {
-
+    printf("type in eval:");
+    pint(v->type);
     if(v->type == LVAL_COM){
         print("Comment block in eval, assuming comment");
         return v;
@@ -335,6 +334,7 @@ lval *lval_eval(lenv *e, lval *v)
     if (v->type == LVAL_SEXPR)
     {
         //If it has any children, evaluate
+        print("S-expression");
         return lval_eval_sexpr(e, v);
     }
     //else
@@ -344,11 +344,13 @@ lval *lval_eval(lenv *e, lval *v)
 //called inside of eval function
 lval *lval_eval_sexpr(lenv *e, lval *v)
 {
+    printf("count:");
+    pint(v->count);
     for (int i = 0; i < v->count; i++)
     {
         v->cell[i] = lval_eval(e, v->cell[i]);
     }
-
+    pint(1);
     for (int i = 0; i < v->count; i++)
     {
         if (v->cell[i]->type == LVAL_ERR)
@@ -356,15 +358,16 @@ lval *lval_eval_sexpr(lenv *e, lval *v)
             return lval_take(v, 0);
         }
     }
+     pint(2);
     if (v->count == 0)
     {
-        return 0;
+        return v;
     }
     else if (v->count == 1)
     {
         return lval_take(v, 0);
     }
-
+     pint(3);
     lval *f = lval_pop(v, 0);
     if (f->type != LVAL_FUN)
     {
@@ -526,4 +529,39 @@ lval* lval_call(lenv* e, lval* f, lval* a){
     }else{
         return lval_copy(f);
     }
+}
+
+
+int lval_eq(lval *a, lval *b){
+    if(a->type != b->type){
+        return 0;
+    }
+    switch(a->type){
+        case LVAL_NUM:
+            return a->num == b->num;
+        case LVAL_STR:
+            return (strcmp(a->str,b->str) == 0);
+        case LVAL_SYM:
+            return  (strcmp(a->sym,b->sym) == 0);
+        case LVAL_ERR:
+            return (strcmp(a->err,b->err) == 0);
+       case LVAL_FUN:
+            if(a->builtin || b->builtin){
+                return a->builtin == b->builtin;
+            }
+            return lval_eq(a->formals, b->formals) && lval_eq(a->body, b->body);
+        case LVAL_QEXPR:
+        case LVAL_SEXPR:
+            if(a->count != b->count){
+                return 0;
+            }
+            for(int i = 0; i < a->count; i++){
+                if(!lval_eq(a->cell[i], b->cell[i])){
+                    return 0;
+                }
+            }
+            return 1;
+    }
+    return 0;
+
 }

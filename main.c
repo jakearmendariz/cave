@@ -16,7 +16,7 @@ int main(int argc, char **argv)
         number  : /-?[0-9]+/ ;                       \
         symbol  : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/ ; \
         string  : /\"(\\\\.|[^\"])*\"/ ;             \
-        comment : /;[^\\r\\n]*/ ;                    \
+        comment : /#[^\\r\\n]*/ ;                    \
         sexpr   : '(' <expr>* ')' ;                  \
         qexpr   : '{' <expr>* '}' ;                  \
         expr    : <number>  | <symbol> | <string>    \
@@ -34,52 +34,52 @@ int main(int argc, char **argv)
 
     //Supplied with list of files 
     if (argc >= 2) {
-        
-    for (int i = 1; i < argc; i++) {
 
-        lval* args = lval_add(lval_sexpr(), lval_str(argv[i]));
+        for (int i = 1; i < argc; i++) {
 
-        lval* x = builtin_load(e, args);
+            lval* args = lval_add(lval_sexpr(), lval_str(argv[i]));
 
-        if (x->type == LVAL_ERR) { lval_println(x); }
-            lval_del(x);
-        }
+            lval* x = builtin_load(e, args);
+
+            if (x->type == LVAL_ERR) { lval_println(x); }
+                lval_del(x);
+            }
     }
-    
-    
-    while (1)
-    {
-        char *input = readline("lispy: ");
-        if(strstr(input, "#")){
-            int i = strcspn (input,"#");
-            input[i] = '\0';
-        }
-        if(strlen(input) == 0){
-            continue;
-        }
+    else{
+        while (1)
+        {
+            char *input = readline("lispy: ");
+            if(strstr(input, ";")){
+                int i = strcspn (input,";");
+                input[i] = '\0';
+            }
+            if(strlen(input) == 0){
+                continue;
+            }
 
-        add_history(input);
-        if (strcmp(input, "quit") == 0)
-        {
-            printf("quiting program\n");
-            break;
-        }
+            add_history(input);
+            if (strcmp(input, "quit") == 0)
+            {
+                printf("quiting program\n");
+                break;
+            }
 
-        /* Attempt to Parse the user Input */
-        mpc_result_t r;
-        if (mpc_parse("<stdin>", input, Lispy, &r))
-        {
-            lval *x = lval_eval(e, lval_read(r.output));
-            //lval_println(x);
-            lval_del(x);
+            /* Attempt to Parse the user Input */
+            mpc_result_t r;
+            if (mpc_parse("<stdin>", input, Lispy, &r))
+            {
+                lval *x = lval_eval(e, lval_read(r.output));
+                lval_println(x);
+                lval_del(x);
+            }
+            else
+            {
+                /* Otherwise Print the Error */
+                mpc_err_print(r.error);
+                mpc_err_delete(r.error);
+            }
+            free(input);
         }
-        else
-        {
-            /* Otherwise Print the Error */
-            mpc_err_print(r.error);
-            mpc_err_delete(r.error);
-        }
-        free(input);
     }
     lenv_del(e);
     mpc_cleanup(4, Number, Symbol, String, Comment, Sexpr, Qexpr, Expr, Lispy);

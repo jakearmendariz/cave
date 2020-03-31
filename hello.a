@@ -1,2 +1,2 @@
-print "Hello World"
-def {x} 100
+(print "Hello World")
+(def {x} 100)

@@ -125,6 +125,8 @@ lval *lval_join(lval *x, lval *y);
 
 lval *lval_copy(lval *v);
 
+int lval_eq(lval *a, lval *b);
+
 //calls user functions
 lval* lval_call(lenv* e, lval* f, lval* a);
 

@@ -142,6 +142,8 @@ lval *builtin_join(lenv *e, lval *a)
     return x;
 }
 
+
+
 lval *builtin(lenv *e, lval *a, char *func)
 {
     if (strcmp("list", func) == 0)
@@ -217,25 +219,12 @@ lval* builtin_if(lenv* e, lval* a){
 
 }
 
+
 lval* builtin_ord(lenv* e, lval* a, char* op){
     assert(a, (a->count == 2), "Two arguments required");
 
     int r = 0;
-    if (strcmp(op,"==")  == 0) {
-        if(a->cell[0]->type == LVAL_STR){
-            r = (strcmp(a->cell[0]->str, a->cell[1]->str) == 0);
-        }else{
-            r = (a->cell[0]->num ==  a->cell[1]->num);
-        }
-    }
-    else if (strcmp(op, "!=")  == 0) {
-        if(a->cell[0]->type == LVAL_STR){
-            r = (strcmp(a->cell[0]->str, a->cell[1]->str) != 0);
-        }else{
-            r = (a->cell[0]->num !=  a->cell[1]->num);
-        }
-    }
-    else if (strcmp(op, ">")  == 0) {
+    if (strcmp(op, ">")  == 0) {
         r = (a->cell[0]->num >  a->cell[1]->num);
     }
     else if (strcmp(op, "<")  == 0) {
@@ -252,11 +241,11 @@ lval* builtin_ord(lenv* e, lval* a, char* op){
 }
 
 lval* builtin_eq(lenv* e, lval* a){
-    return builtin_ord(e, a, "==");
+    return lval_num(lval_eq(a->cell[0], a->cell[1]));
 }
 
 lval* builtin_ne(lenv* e, lval* a){
-    return builtin_ord(e, a, "!=");
+    return lval_num(!lval_eq(a->cell[0], a->cell[1]));
 }
 
 lval* builtin_gt(lenv* e, lval* a){
@@ -370,7 +359,7 @@ lval* builtin_load(lenv* e, lval* a) {
         //while there is more lines to evaluate
         while(expr->count){
             lval* x = lval_eval(e, lval_pop(expr, 0));
-            lval_println(x);
+            //lval_println(x);
             if(x->type == LVAL_ERR){
                 lval_println(x);
             }
