@@ -167,6 +167,10 @@ lval* builtin_put(lenv* e, lval* a);
 
 lval* builtin_if(lenv* e, lval* a);
 
+lval* builtin_for(lenv* e, lval* a);
+
+lval* builtin_while(lenv* e, lval* a);
+
 lval* builtin_eq(lenv* e, lval* a);
 
 lval* builtin_ne(lenv* e, lval* a);
@@ -191,6 +195,8 @@ void lenv_del(lenv *e);
 lval *lenv_get(lenv *e, lval *k);
 
 void lenv_put(lenv *e, lval *k, lval *v);
+
+char* lenv_get_sym(lenv* e, lval* k);
 
 lenv* lenv_copy(lenv* e);
 

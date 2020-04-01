@@ -48,6 +48,24 @@ lval* lenv_get(lenv* e, lval* k) {
   }
 }
 
+char* lenv_get_sym(lenv* e, lval* k) {
+
+  /* Iterate over all items in environment */
+  for (int i = 0; i < e->count; i++) {
+    /* Check if the stored string matches the symbol string */
+    /* If it does, return a copy of the value */
+    if (lval_eq(e->vals[i], k) == 0) {
+      return e->syms[i];
+    }
+  }
+  //if parent is not null, then check it for the symbol
+  if(e->par){
+      return lenv_get_sym(e->par, k);
+  }else{//No symbol found in parent
+    return "Unbound Symbol";
+  }
+}
+
 //Put in k symbol and v value
 void lenv_put(lenv *e, lval *k, lval *v)
 {
@@ -56,7 +74,7 @@ void lenv_put(lenv *e, lval *k, lval *v)
         if (strcmp(e->syms[i], k->sym) == 0)
         {
             lval_del(e->vals[i]);
-            e->vals[i] = lval_copy(v);
+            e->vals[i] = lval_eval(e, lval_copy(v));
             return;
         }
     }
@@ -65,7 +83,7 @@ void lenv_put(lenv *e, lval *k, lval *v)
     e->vals = realloc(e->vals, sizeof(lval *) * e->count);
     e->syms = realloc(e->syms, sizeof(char *) * e->count);
     // copy ontents of lval and symbol to new location
-    e->vals[e->count - 1] = lval_copy(v);
+    e->vals[e->count - 1] = lval_eval(e, lval_copy(v));
     e->syms[e->count - 1] = malloc(strlen(k->sym) + 1);
     strcpy(e->syms[e->count - 1], k->sym);
 }
@@ -131,6 +149,8 @@ void lenv_add_builtins(lenv *e)
 
     /* Comparison Functions */
     lenv_add_builtin(e, "if", builtin_if);
+    lenv_add_builtin(e, "for", builtin_for);
+    lenv_add_builtin(e, "while", builtin_while);
     lenv_add_builtin(e, "==", builtin_eq);
     lenv_add_builtin(e, "!=", builtin_ne);
     lenv_add_builtin(e, ">",  builtin_gt);

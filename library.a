@@ -1,0 +1,10 @@
+(def {fun} (\ {args body} {def (head args) (\ (tail args) body)}))
+
+(fun{add x y} {+ x y})
+
+(fun{var x, =, a} 
+{
+    def {x} a
+})
+
+fun {unpack f xs} {eval (join (list f) xs)}

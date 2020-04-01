@@ -1,6 +1,11 @@
 
 #include "lisp.h"
 
+/**
+ * builtin functions
+ * These are functions I have added (pre-library)
+ */
+
 #define assert(args, cond, fmt,...)          \
     if (!(cond))                                    \
     {                                               \
@@ -196,6 +201,7 @@ lval *builtin_div(lenv *e, lval *a)
 
 
 lval* builtin_if(lenv* e, lval* a){
+    print("builtin_if");
     assert_num("if", a, 3);
     //Checks that the inputs are of the correct value
     assert_type("if", a, 0, LVAL_NUM);
@@ -216,7 +222,73 @@ lval* builtin_if(lenv* e, lval* a){
 
     lval_del(a);
     return x;
+}
 
+//for loop, repeats for l times
+//format: for x in arr {expression}
+//format: for x range 0 10 {expression} //turn expression into a function with a parameter x
+// x = cell[0] | for-type = cell[1] | start = cell[2] | end = cell[3] | function inner = cell[4]
+//have the value of the array or the count
+lval* builtin_for(lenv* e, lval* a){
+    print("builtin_for\n\n");
+    assert_num("for", a, 5);
+    //Checks that the inputs are of the correct value
+    assert_type("for", a, 0, LVAL_SYM);//x
+    assert_type("for", a, 1, LVAL_SYM);//for-type
+    assert_type("for", a, 2, LVAL_NUM);
+    assert_type("for", a, 3, LVAL_NUM);
+    assert_type("for", a, 4, LVAL_QEXPR);
+    printf("passed error catches on for loop\n");
+    //Mark both expressions as evaluable
+    lval *x;
+    a->cell[4]->type = LVAL_SEXPR;
+    //lval* inner = lval_pop(4); //Pop the inner loop to be evaluated on its own
+    ///lenv_put(e, lval_sym("for-inner"), a->cell[4])
+    //for i range 0 10 {def {x} (+ i x)}
+    print("for: check range");
+    if(strcmp(a->cell[1]->sym, "range") == 0){
+        print("range == 0");
+        //Create a function with lable forinner. with paramtere given
+        for(int i = a->cell[2]->num; i < a->cell[3]->num; i++){
+            pint(i);
+            //define variable x to be the value of value of i (inside lenv)
+            lenv_def(e, a->cell[0], lval_num(i));
+            //Preformt the function operation inside the forloop with parameter x
+            x = lval_add(x, lval_eval(e, a->cell[4]));
+        }
+    }else{//go through array
+        x = lval_sexpr();
+    }
+
+    lval_del(a);
+    return x;
+}
+
+lval* builtin_while(lenv* e, lval* a){
+    assert_num("while", a, 2);
+    //Checks that the inputs are of the correct value
+    assert_type("while", a, 0, LVAL_QEXPR);
+    assert_type("while", a, 1, LVAL_QEXPR);
+
+    //Mark both expressions as evaluable
+    lval *x;
+    lval *cond = lval_copy(a->cell[0]);
+    lval *body = lval_copy(a->cell[1]);
+    cond->type = LVAL_SEXPR;
+    body->type = LVAL_SEXPR;
+    while(lval_eval(e, cond)){
+        //if condition is true evalue
+        //x = lval_add(x, lval_eval(e, body));
+        lval_print(lval_eval(e, body));
+        cond = lval_copy(a->cell[0]);
+        cond->type = LVAL_SEXPR;
+        body = lval_copy(a->cell[1]);
+        body->type = LVAL_SEXPR;
+    }
+
+    lval_del(a);
+    x = lval_sexpr();
+    return x;
 }
 
 
@@ -322,7 +394,6 @@ lval* builtin_lambda(lenv* e, lval* a){
 
 lval* builtin_print(lenv* e, lval *a){
     //print each argument followed by a spce
-    lval_print(a);
     for(int i = 0; i < a->count; i++){
         lval_print(a->cell[i]);
         putchar(' ');

@@ -178,7 +178,7 @@ lval *lval_read(mpc_ast_t *t)
     }
     if (strstr(t->tag, "symbol"))
     {
-        print("Symbol detected");
+        printf("symbol:%s\n", t->contents);
         return lval_sym(t->contents);
     }
     if (strstr(t->tag, "string"))
@@ -281,6 +281,8 @@ void lval_print(lval *v)
         if (v->builtin) {
             printf("builtin function");
         } else {
+            //printf("function:%s\n", v->formals->cell[0]->sym);
+            printf("%s\n", lenv_get_sym(v->env, v));
             printf("(\\ "); lval_print(v->formals);
             putchar(' '); lval_print(v->body); putchar(')');
         }
@@ -318,7 +320,7 @@ lval *lval_eval(lenv *e, lval *v)
     }
     if (v->type == LVAL_SYM)
     {
-        print("symbol in eval");
+        //print("symbol in eval");
         lval *x = lenv_get(e, v);
         //printf("symbol:%s\n", v->sym);
         lval_del(v);
@@ -476,9 +478,10 @@ lval* lval_lambda(lval* formals, lval* body) {
 lval* lval_call(lenv* e, lval* f, lval* a){
     //If function is built in
     if(f->builtin){
+        print("builtin function - lval_call");
         return f->builtin(e, a);
     }
-
+    print("user-fed function - lval_call");
     int given = a->count;
     int total = f->formals->count;
     

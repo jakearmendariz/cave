@@ -14,7 +14,7 @@ int main(int argc, char **argv)
     mpca_lang(MPCA_LANG_DEFAULT,
     "                                              \
         number  : /-?[0-9]+/ ;                       \
-        symbol  : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/ ; \
+        symbol  : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!,&]+/ ; \
         string  : /\"(\\\\.|[^\"])*\"/ ;             \
         comment : /#[^\\r\\n]*/ ;                    \
         sexpr   : '(' <expr>* ')' ;                  \
@@ -31,7 +31,7 @@ int main(int argc, char **argv)
     print("Debug on:");
     //Adds functions
     lenv_add_builtins(e);
-    builtin_load(e, lval_str("hello.a"));
+    builtin_load(e, lval_str("\"hello.a\""));
 
     //Supplied with list of files 
     if (argc >= 2) {
@@ -70,8 +70,9 @@ int main(int argc, char **argv)
             if (mpc_parse("<stdin>", input, Lispy, &r))
             {
                 lval *x = lval_eval(e, lval_read(r.output));
+                lval_println(x);
                 if(x->type == LVAL_ERR){
-                    lval_println(x);
+                    //lval_println(x);
                 }
                 lval_del(x);
             }
