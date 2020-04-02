@@ -178,8 +178,9 @@ lval *lval_read(mpc_ast_t *t)
     }
     if (strstr(t->tag, "symbol"))
     {
-        printf("symbol:%s\n", t->contents);
+        //printf("symbol:%s\n", t->contents);
         return lval_sym(t->contents);
+        
     }
     if (strstr(t->tag, "string"))
     {
@@ -322,6 +323,7 @@ lval *lval_eval(lenv *e, lval *v)
     {
         //print("symbol in eval");
         lval *x = lenv_get(e, v);
+       
         //printf("symbol:%s\n", v->sym);
         lval_del(v);
         //lval_println(v);
@@ -391,6 +393,11 @@ lval *lval_pop(lval *v, int i)
     return x;
 }
 
+//Similar to pop, but doesn't delete, instead it just copies it over
+lval *lval_get(lval *v, int i){
+    return lval_copy(v->cell[i]);
+}
+
 //Deletes the list, takes only i out
 lval *lval_take(lval *v, int i)
 {
@@ -411,7 +418,9 @@ lval *lval_join(lval *x, lval *y)
     return x;
 }
 
-
+/**
+ * copies the lval with each of its cells
+ */
 lval *lval_copy(lval *v)
 {
     lval *x = malloc(sizeof(lval));
@@ -460,6 +469,11 @@ lval *lval_copy(lval *v)
     return x;
 }
 
+/**
+ * type of function
+ * formals are the parameters
+ * body is the function body
+ */
 lval* lval_lambda(lval* formals, lval* body) {
     lval* v = malloc(sizeof(lval));
     v->type = LVAL_FUN;

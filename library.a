@@ -2,9 +2,17 @@
 
 (fun{add x y} {+ x y})
 
-(fun{var x, =, a} 
+(fun{var x , b , a} 
 {
     def {x} a
 })
 
-fun {unpack f xs} {eval (join (list f) xs)}
+(fun{sum_array arr}
+{
+    (def {sum} 0)
+    (for {x in arr}{
+        (def {sum} (+ sum x))
+        (print sum)
+    })
+    (print "sum_array complete")
+})

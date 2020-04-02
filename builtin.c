@@ -225,45 +225,72 @@ lval* builtin_if(lenv* e, lval* a){
 }
 
 //for loop, repeats for l times
-//format: for x in arr {expression}
-//format: for x range 0 10 {expression} //turn expression into a function with a parameter x
+//format: for {x in arr} {expression}
+//format: for {x from 0 10} {expression} //turn expression into a function with a parameter x
 // x = cell[0] | for-type = cell[1] | start = cell[2] | end = cell[3] | function inner = cell[4]
 //have the value of the array or the count
 lval* builtin_for(lenv* e, lval* a){
-    print("builtin_for\n\n");
-    assert_num("for", a, 5);
+    printf("builtin_for\n\n");
+    assert_num("for", a, 2);
     //Checks that the inputs are of the correct value
-    assert_type("for", a, 0, LVAL_SYM);//x
-    assert_type("for", a, 1, LVAL_SYM);//for-type
-    assert_type("for", a, 2, LVAL_NUM);
-    assert_type("for", a, 3, LVAL_NUM);
-    assert_type("for", a, 4, LVAL_QEXPR);
-    printf("passed error catches on for loop\n");
+    assert_type("for", a, 0, LVAL_QEXPR);
+    assert_type("for", a, 1, LVAL_QEXPR);
     //Mark both expressions as evaluable
-    lval *x;
-    a->cell[4]->type = LVAL_SEXPR;
-    //lval* inner = lval_pop(4); //Pop the inner loop to be evaluated on its own
-    ///lenv_put(e, lval_sym("for-inner"), a->cell[4])
-    //for i range 0 10 {def {x} (+ i x)}
-    print("for: check range");
-    if(strcmp(a->cell[1]->sym, "range") == 0){
-        print("range == 0");
-        //Create a function with lable forinner. with paramtere given
-        for(int i = a->cell[2]->num; i < a->cell[3]->num; i++){
-            pint(i);
-            //define variable x to be the value of value of i (inside lenv)
-            lenv_def(e, a->cell[0], lval_num(i));
-            //Preformt the function operation inside the forloop with parameter x
-            x = lval_add(x, lval_eval(e, a->cell[4]));
-        }
-    }else{//go through array
-        x = lval_sexpr();
-    }
+    //lval *x;
+    lval* instruct = lval_pop(a, 0); //Pop the inner loop to be evaluated on its own
+    
+    assert_type("for", instruct, 1, LVAL_SYM);
+    lval* variable = lval_pop(instruct, 0);
+    lval* command = lval_pop(instruct, 0);
+    if(strcmp(command->sym, "from")== 0){
+        assert_num("for", instruct, 2);
+        assert_type("for", a, 0, LVAL_NUM);
+        assert_type("for", a, 1, LVAL_NUM);
+        lval* from = lval_pop(instruct, 0);
+        lval* to = lval_pop(instruct, 0);
 
+        //for i range 0 10 {def {x} (+ i x)}
+        print("for: check range");
+        lval *body;
+        //Create a function with lable forinner. with paramtere given
+        for(int i = from->num; i < to->num; i++){
+            body = lval_get(a, 0);
+            body->type = LVAL_SEXPR;
+            //printf("%d, ",i);
+            //define variable x to be the value of value of i (inside lenv)
+            lenv_def(e, variable, lval_num(i));
+            //Preformt the function operation inside the forloop with parameter x
+            lval_eval(e, body);
+        }
+    }else if (strcmp(command->sym, "in")== 0){
+        assert_num("for", instruct, 1);
+        lval* arr = lval_pop(instruct, 0);
+
+        if(arr->type == LVAL_SYM){
+            arr = lenv_get(e, arr);
+        }
+        //for {i in array} {body(i)}
+        lval *body;
+        //Create a function with lable forinner. with paramtere given
+        while(arr->count > 0){
+            body = lval_get(a, 0);
+            body->type = LVAL_SEXPR;
+            //define variable x to be the value of value of i (inside lenv)
+            lenv_def(e, variable, lval_pop(arr, 0));
+            //Preform the function operation inside the forloop with parameter x
+            lval_eval(e, body);
+        }
+    }else{
+        return lval_err("In forloop no function %s\n", command->sym);
+    }
     lval_del(a);
-    return x;
+    return lval_sexpr();
 }
 
+
+lval *builtin_length(lenv *e, lval *a){
+    return NULL;
+}
 lval* builtin_while(lenv* e, lval* a){
     assert_num("while", a, 2);
     //Checks that the inputs are of the correct value
