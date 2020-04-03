@@ -289,8 +289,10 @@ lval* builtin_for(lenv* e, lval* a){
 
 
 lval *builtin_length(lenv *e, lval *a){
-    return NULL;
+    return lval_num(a->count);
 }
+
+//Problem in while loops: runs infinetly because it will not save variable that is incremented within
 lval* builtin_while(lenv* e, lval* a){
     assert_num("while", a, 2);
     //Checks that the inputs are of the correct value
@@ -299,18 +301,65 @@ lval* builtin_while(lenv* e, lval* a){
 
     //Mark both expressions as evaluable
     lval *x;
-    lval *cond = lval_copy(a->cell[0]);
-    lval *body = lval_copy(a->cell[1]);
-    cond->type = LVAL_SEXPR;
-    body->type = LVAL_SEXPR;
-    while(lval_eval(e, cond)){
-        //if condition is true evalue
-        //x = lval_add(x, lval_eval(e, body));
-        lval_print(lval_eval(e, body));
-        cond = lval_copy(a->cell[0]);
-        cond->type = LVAL_SEXPR;
-        body = lval_copy(a->cell[1]);
+    lval *condition = lval_copy(a->cell[0]);
+    condition->type = LVAL_SEXPR;
+    lval *condi = lval_eval(e,condition);
+    int test = 1;
+    if(condi->type == LVAL_NUM){
+        if(condi->num == 0){
+            test = 0;
+        }
+    }
+    lval *body;
+    int counter = 0;
+    while(test){
+        counter++;
+        if(counter > 10){
+            break;
+        }
+        //lval_print((lval_eval(e, cond)));
+        body = lval_get(a, 1);
         body->type = LVAL_SEXPR;
+        free(condition);
+        condition = lval_copy(a->cell[0]);
+        condition->type = LVAL_SEXPR;
+        condi = lval_eval(e, body);
+        if(condi->type == LVAL_NUM){
+            if(condi->num == 0){
+                test = 0;
+            }
+        }
+        //cond = lval_eval(condition);
+    }
+
+    lval_del(a);
+    x = lval_sexpr();
+    return x;
+}
+
+lval* builtin_while1(lenv* e, lval* a){
+    assert_num("while", a, 2);
+    //Checks that the inputs are of the correct value
+    assert_type("while", a, 0, LVAL_NUM);
+    assert_type("while", a, 1, LVAL_QEXPR);
+
+    //Mark both expressions as evaluable
+    lval *x;
+    lval *cond = lval_pop(a, 0);
+    printf("printing condtion: ");
+    lval_print(cond);
+    lval *body;
+    int counter = 0;
+    while(cond){
+        counter++;
+        if(counter > 10){
+            break;
+        }
+        //lval_print((lval_eval(e, cond)));
+        body = lval_get(a, 1);
+        body->type = LVAL_SEXPR;
+        cond = lval_copy(a->cell[0]);
+        lval_eval(e, body);
     }
 
     lval_del(a);
@@ -334,6 +383,8 @@ lval* builtin_ord(lenv* e, lval* a, char* op){
     }
     else if (strcmp(op, "<=") == 0) {
         r = (a->cell[0]->num <= a->cell[1]->num);
+    }else if(strcmp(op, "<=") == 0) {
+        r = a->cell[0]->num + a->cell[2]->num;
     }
     lval_del(a);
     return lval_num(r);
@@ -357,6 +408,10 @@ lval* builtin_lt(lenv* e, lval* a){
 
 lval* builtin_ge(lenv* e, lval* a){
     return builtin_ord(e, a, ">=");
+}
+
+lval* builtin_pe(lenv* e, lval* a){
+    return builtin_ord(e, a, "+=");
 }
 
 lval* builtin_var(lenv* e, lval* a, char* func){

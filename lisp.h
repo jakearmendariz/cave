@@ -3,7 +3,6 @@
 #define lisp_h
 #include <stdlib.h>
 #include "mpc.h"
-#include <editline/readline.h>
 #include<stdio.h>
 
 

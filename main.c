@@ -1,6 +1,27 @@
 #include "lisp.h"
 // cc -std=c99 -Wall mpc.c lval.c builtin.c env.c main.c -ledit -o run
 // ./run
+#ifdef _WIN32
+
+static char buffer[2048];
+
+char* readline(char* prompt) {
+  fputs(prompt, stdout);
+  fgets(buffer, 2048, stdin);
+  char* cpy = malloc(strlen(buffer)+1);
+  strcpy(cpy, buffer);
+  cpy[strlen(cpy)-1] = '\0';
+  return cpy;
+}
+
+void add_history(char* unused) {}
+
+#elif __linux__     //linux/ubuntu
+#include <readline/readline.h>
+#include <readline/history.h>
+#else               //macos
+#include <editline/readline.h>
+#endif
 int main(int argc, char **argv)
 {
     Number  = mpc_new("number");
