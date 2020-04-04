@@ -1,2 +1,8 @@
 (print "Hello World")
 (def {x} 100)
+
+(for {x in arr}{
+        (def {sum} (+ sum x))
+        (print sum)
+    })
+    (print "sum_array complete")

@@ -16,7 +16,7 @@
 #define assert_type(func, args, index, expect) \
   assert(args, args->cell[index]->type == expect, \
     "Function '%s' passed incorrect type for argument %i. Got %s, Expected %s.", \
-    func, index, ltype_name(args->cell[index]->type), ltype_name(expect))
+    func, index, ctype_name(args->cell[index]->type), ctype_name(expect))
 
 #define assert_num(func, args, num) \
   assert(args, args->count == num, \
@@ -246,20 +246,21 @@ cval* builtin_for(cave_env* e, cval* a){
         assert_num("for", instruct, 2);
         assert_type("for", instruct, 0, cval_NUM);
         assert_type("for", instruct, 1, cval_NUM);
+
         cval* from = cval_pop(instruct, 0);
         cval* to = cval_pop(instruct, 0);
 
-        //for i range 0 10 {def {x} (+ i x)}
-        print("for: check range");
+        //for i range 0 10 {def {sum} (+ i sum)}
         cval *body;
         //Create a function with lable forinner. with paramtere given
         for(int i = from->num; i < to->num; i++){
             body = cval_get(a, 0);
             body->type = cval_SEXPR;
-            //printf("%d, ",i);
             //define variable x to be the value of value of i (inside cave_env)
             cave_env_def(e, variable, cval_num(i));
             //Preformt the function operation inside the forloop with parameter x
+            print("printing for body");
+            cval_println(body);
             cval_eval(e, body);
         }
     }else if (strcmp(command->sym, "in")== 0){
@@ -278,6 +279,8 @@ cval* builtin_for(cave_env* e, cval* a){
             //define variable x to be the value of value of i (inside cave_env)
             cave_env_def(e, variable, cval_pop(arr, 0));
             //Preform the function operation inside the forloop with parameter x
+            printf("printing for body\n");
+            cval_println(body);
             cval_eval(e, body);
         }
     }else{
@@ -416,8 +419,8 @@ cval* builtin_var(cave_env* e, cval* a, char* func){
         assert(a, (syms->cell[i]->type == cval_SYM),
       "Function '%s' cannot define non-symbol. "
       "Got %s, Expected %s.", func,
-      ltype_name(syms->cell[i]->type),
-      ltype_name(cval_SYM));
+      ctype_name(syms->cell[i]->type),
+      ctype_name(cval_SYM));
     }
 
     assert(a, (syms->count == a->count-1),
@@ -452,13 +455,13 @@ cval* builtin_lambda(cave_env* e, cval* a){
     assert(a, a->count == 2,
                   "Function 'lambda' needs two arguments");
     assert(a, a->cell[0]->type == cval_QEXPR,
-                  "Type needs to be quote expressiomn for lambda function. Not a %s", ltype_name(a->cell[0]->type));
+                  "Type needs to be quote expressiomn for lambda function. Not a %s", ctype_name(a->cell[0]->type));
 
     //check first q expressions contains only symbols
     for (int i = 0; i < a->cell[0]->count; i++) {
         assert(a, (a->cell[0]->cell[i]->type == cval_SYM),
         "Cannot define non-symbol. Got %s, Expected %s.",
-        ltype_name(a->cell[0]->cell[i]->type),ltype_name(cval_SYM));
+        ctype_name(a->cell[0]->cell[i]->type),ctype_name(cval_SYM));
     }
 
     cval* formals = cval_pop(a, 0);

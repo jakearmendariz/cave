@@ -10,8 +10,10 @@
 #Finds the sum of all elements in array
 (fun{sum_array arr}
 {
-    (def {sum} 0)
-    (for {i from 0 10}{
-        (def {sum} {+ sum 1})
+    (def {x} 0)
+    (for {i in arr}{
+        (def {x} (+ x i))
+        (print i)
     })
+    (print x)
 })

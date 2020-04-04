@@ -95,7 +95,7 @@ cval *cval_qexpr(void);
 cval *cval_builtin(lbuiltin func);
 
 //Specifies what each kind is
-char* ltype_name(int t);
+char* ctype_name(int t);
 
 void cval_del(cval *v);
 

@@ -83,7 +83,7 @@ cval *cval_qexpr(void)
     return v;
 }
 
-char* ltype_name(int t) {
+char* ctype_name(int t) {
   switch(t) {
     case cval_FUN: return "Function";
     case cval_NUM: return "Number";
@@ -363,9 +363,13 @@ cval *cval_eval_sexpr(cave_env *e, cval *v)
     cval *f = cval_pop(v, 0);
     if (f->type != cval_FUN)
     {
+        int type = f->type;
+        if(type == cval_SEXPR){
+            return cval_sexpr();
+        }
         cval_del(v);
         cval_del(f);
-        return cval_err("First element is not a function");
+        return cval_err("First element is not a function, it is a %s", ctype_name(type));
     }
 
     //Calls the function
