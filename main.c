@@ -1,5 +1,5 @@
-#include "lisp.h"
-// cc -std=c99 -Wall mpc.c lval.c builtin.c env.c main.c -ledit -o run
+#include "cave.h"
+// cc -std=c99 -Wall mpc.c cval.c builtin.c env.c main.c -ledit -o run
 // ./run
 #ifdef _WIN32
 
@@ -48,23 +48,23 @@ int main(int argc, char **argv)
     puts("Cave: The Programming Language");
     puts("Enter quit to exit\n");
     //Creates environment
-    lenv *e = lenv_new();
+    cave_env *e = cave_env_new();
     print("Debug on:");
     //Adds functions
-    lenv_add_builtins(e);
-    builtin_load(e, lval_str("\"hello.a\""));
+    cave_env_add_builtins(e);
+    builtin_load(e, cval_str("\"hello.a\""));
 
     //Supplied with list of files 
     if (argc >= 2) {
 
         for (int i = 1; i < argc; i++) {
 
-            lval* args = lval_add(lval_sexpr(), lval_str(argv[i]));
+            cval* args = cval_add(cval_sexpr(), cval_str(argv[i]));
 
-            lval* x = builtin_load(e, args);
+            cval* x = builtin_load(e, args);
 
-            if (x->type == LVAL_ERR) { lval_println(x); }
-                lval_del(x);
+            if (x->type == cval_ERR) { cval_println(x); }
+                cval_del(x);
             }
     }
     else{
@@ -90,12 +90,12 @@ int main(int argc, char **argv)
             mpc_result_t r;
             if (mpc_parse("<stdin>", input, Lispy, &r))
             {
-                lval *x = lval_eval(e, lval_read(r.output));
-                lval_println(x);
-                if(x->type == LVAL_ERR){
-                    //lval_println(x);
+                cval *x = cval_eval(e, cval_read(r.output));
+                cval_println(x);
+                if(x->type == cval_ERR){
+                    //cval_println(x);
                 }
-                lval_del(x);
+                cval_del(x);
             }
             else
             {
@@ -106,7 +106,7 @@ int main(int argc, char **argv)
             free(input);
         }
     }
-    lenv_del(e);
+    cave_env_del(e);
     mpc_cleanup(4, Number, Symbol, String, Comment, Sexpr, Qexpr, Expr, Lispy);
     return 0;
 }

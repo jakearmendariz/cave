@@ -1,15 +1,15 @@
-#include "lisp.h"
+#include "cave.h"
 //lisp enviorment
 /**
 * Enviorment
 * A way to encode a relationship between names and values
 * char** syms, will be an array of size count, keeping track of the names for symbols
-* lval **vals is a paralell array. This will keep track of the values inside the enviorment corresponding with each symbol.
+* cval **vals is a paralell array. This will keep track of the values inside the enviorment corresponding with each symbol.
 */
 
-lenv *lenv_new(void)
+cave_env *cave_env_new(void)
 {
-    lenv *e = malloc(sizeof(lenv));
+    cave_env *e = malloc(sizeof(cave_env));
     e->par = NULL;
     e->count = 0;
     e->syms = NULL;
@@ -17,12 +17,12 @@ lenv *lenv_new(void)
     return e;
 }
 
-void lenv_del(lenv *e)
+void cave_env_del(cave_env *e)
 {
     for (int i = 0; i < e->count; i++)
     {
         free(e->syms[i]);
-        lval_del(e->vals[i]);
+        cval_del(e->vals[i]);
     }
     free(e->syms);
     free(e->vals);
@@ -30,135 +30,135 @@ void lenv_del(lenv *e)
 }
 
 //check if any existing cell matches the enviorments commands, if nothing return an error
-lval* lenv_get(lenv* e, lval* k) {
+cval* cave_env_get(cave_env* e, cval* k) {
 
   /* Iterate over all items in environment */
   for (int i = 0; i < e->count; i++) {
     /* Check if the stored string matches the symbol string */
     /* If it does, return a copy of the value */
     if (strcmp(e->syms[i], k->sym) == 0) {
-      return lval_copy(e->vals[i]);
+      return cval_copy(e->vals[i]);
     }
   }
   //if parent is not null, then check it for the symbol
   if(e->par){
-      return lenv_get(e->par, k);
+      return cave_env_get(e->par, k);
   }else{//No symbol found in parent
-    return lval_err("Unbound Symbol '%s'", k->sym);
+    return cval_err("Unbound Symbol '%s'", k->sym);
   }
 }
 
-char* lenv_get_sym(lenv* e, lval* k) {
+char* cave_env_get_sym(cave_env* e, cval* k) {
 
   /* Iterate over all items in environment */
   for (int i = 0; i < e->count; i++) {
     /* Check if the stored string matches the symbol string */
     /* If it does, return a copy of the value */
-    if (lval_eq(e->vals[i], k) == 0) {
+    if (cval_eq(e->vals[i], k) == 0) {
       return e->syms[i];
     }
   }
   //if parent is not null, then check it for the symbol
   if(e->par){
-      return lenv_get_sym(e->par, k);
+      return cave_env_get_sym(e->par, k);
   }else{//No symbol found in parent
     return "Unbound Symbol";
   }
 }
 
 //Put in k symbol and v value
-void lenv_put(lenv *e, lval *k, lval *v)
+void cave_env_put(cave_env *e, cval *k, cval *v)
 {
     for (int i = 0; i < e->count; i++)
     {
         if (strcmp(e->syms[i], k->sym) == 0)
         {
-            lval_del(e->vals[i]);
-            e->vals[i] = lval_eval(e, lval_copy(v));
+            cval_del(e->vals[i]);
+            e->vals[i] = cval_eval(e, cval_copy(v));
             return;
         }
     }
     //No existing entry, allocte space for new entry
     e->count++;
-    e->vals = realloc(e->vals, sizeof(lval *) * e->count);
+    e->vals = realloc(e->vals, sizeof(cval *) * e->count);
     e->syms = realloc(e->syms, sizeof(char *) * e->count);
-    // copy ontents of lval and symbol to new location
-    e->vals[e->count - 1] = lval_eval(e, lval_copy(v));
+    // copy ontents of cval and symbol to new location
+    e->vals[e->count - 1] = cval_eval(e, cval_copy(v));
     e->syms[e->count - 1] = malloc(strlen(k->sym) + 1);
     strcpy(e->syms[e->count - 1], k->sym);
 }
 
 
 //Put into the parent's (root) global enviorment
-void lenv_def(lenv* e, lval* k, lval* v){
+void cave_env_def(cave_env* e, cval* k, cval* v){
     //iterate while e has a parent
     while(e->par){
         e = e->par;
     }
     //put value in the global enviorment
-    lenv_put(e, k, v);
+    cave_env_put(e, k, v);
 }
 
 //copy
-lenv* lenv_copy(lenv* e){
-    lenv* n = malloc(sizeof(lenv));
+cave_env* cave_env_copy(cave_env* e){
+    cave_env* n = malloc(sizeof(cave_env));
     n->par = e->par;
     n->count = e->count;
     n->syms = malloc(sizeof(char*) * n->count);
-    n->vals = malloc(sizeof(lval*) * n->count);
+    n->vals = malloc(sizeof(cval*) * n->count);
     for (int i = 0; i < e->count; i++) {
         n->syms[i] = malloc(strlen(e->syms[i]) + 1);
         strcpy(n->syms[i], e->syms[i]);
-        n->vals[i] = lval_copy(e->vals[i]);
+        n->vals[i] = cval_copy(e->vals[i]);
     }
     return n;
 }
 
 
 
-void lenv_add_builtin(lenv *e, char *name, lbuiltin func)
+void cave_env_add_builtin(cave_env *e, char *name, lbuiltin func)
 {
-    lval *k = lval_sym(name);
-    lval *v = lval_builtin(func);
-    lenv_put(e, k, v);
-    lval_del(k);
-    lval_del(v);
+    cval *k = cval_sym(name);
+    cval *v = cval_builtin(func);
+    cave_env_put(e, k, v);
+    cval_del(k);
+    cval_del(v);
 }
 
-void lenv_add_builtins(lenv *e)
+void cave_env_add_builtins(cave_env *e)
 {
     /* List Functions */
-    lenv_add_builtin(e, "list", builtin_list);
-    lenv_add_builtin(e, "head", builtin_head);
-    lenv_add_builtin(e, "tail", builtin_tail);
-    lenv_add_builtin(e, "eval", builtin_eval);
-    lenv_add_builtin(e, "join", builtin_join);
+    cave_env_add_builtin(e, "list", builtin_list);
+    cave_env_add_builtin(e, "head", builtin_head);
+    cave_env_add_builtin(e, "tail", builtin_tail);
+    cave_env_add_builtin(e, "eval", builtin_eval);
+    cave_env_add_builtin(e, "join", builtin_join);
 
     /* Mathematical Functions */
-    lenv_add_builtin(e, "+", builtin_add);
-    lenv_add_builtin(e, "-", builtin_sub);
-    lenv_add_builtin(e, "*", builtin_mul);
-    lenv_add_builtin(e, "/", builtin_div);
+    cave_env_add_builtin(e, "+", builtin_add);
+    cave_env_add_builtin(e, "-", builtin_sub);
+    cave_env_add_builtin(e, "*", builtin_mul);
+    cave_env_add_builtin(e, "/", builtin_div);
 
     /* Variable Functions */
-    lenv_add_builtin(e, "def",  builtin_def);
-    lenv_add_builtin(e, "=",   builtin_put);
+    cave_env_add_builtin(e, "def",  builtin_def);
+    cave_env_add_builtin(e, "=",   builtin_put);
 
     /* Functions */
-    lenv_add_builtin(e, "\\", builtin_lambda);
+    cave_env_add_builtin(e, "\\", builtin_lambda);
 
     /* Comparison Functions */
-    lenv_add_builtin(e, "if", builtin_if);
-    lenv_add_builtin(e, "for", builtin_for);
-    lenv_add_builtin(e, "while", builtin_while);
-    lenv_add_builtin(e, "==", builtin_eq);
-    lenv_add_builtin(e, "!=", builtin_ne);
-    lenv_add_builtin(e, ">",  builtin_gt);
-    lenv_add_builtin(e, "<",  builtin_lt);
-    lenv_add_builtin(e, ">=", builtin_ge);
+    cave_env_add_builtin(e, "if", builtin_if);
+    cave_env_add_builtin(e, "for", builtin_for);
+    cave_env_add_builtin(e, "while", builtin_while);
+    cave_env_add_builtin(e, "==", builtin_eq);
+    cave_env_add_builtin(e, "!=", builtin_ne);
+    cave_env_add_builtin(e, ">",  builtin_gt);
+    cave_env_add_builtin(e, "<",  builtin_lt);
+    cave_env_add_builtin(e, ">=", builtin_ge);
 
     //string functions
-    lenv_add_builtin(e, "load",  builtin_load);
-    lenv_add_builtin(e, "error", builtin_error);
-    lenv_add_builtin(e, "print", builtin_print);
+    cave_env_add_builtin(e, "load",  builtin_load);
+    cave_env_add_builtin(e, "error", builtin_error);
+    cave_env_add_builtin(e, "print", builtin_print);
 }

@@ -1,4 +1,4 @@
-#include "lisp.h"
+#include "cave.h"
 
 //So I can place these all over my code, when debugging
 int print_all = 0;
