@@ -38,6 +38,13 @@ cval* cave_env_get(cave_env* e, cval* k) {
     /* If it does, return a copy of the value */
     if (strcmp(e->syms[i], k->sym) == 0) {
       return cval_copy(e->vals[i]);
+      /*
+      printf("k->count:%d\n", k->count);
+      if(strcmp(k->sym, "while") == 0){
+        k->cell[0]->type = cval_QEXPR;
+      }
+      return x;
+      */
     }
   }
   //if parent is not null, then check it for the symbol
@@ -142,7 +149,7 @@ void cave_env_add_builtins(cave_env *e)
 
     /* Variable Functions */
     cave_env_add_builtin(e, "def",  builtin_def);
-    cave_env_add_builtin(e, "=",   builtin_put);
+    cave_env_add_builtin(e, "=",   builtin_def);
 
     /* Functions */
     cave_env_add_builtin(e, "\\", builtin_lambda);

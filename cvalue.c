@@ -321,12 +321,8 @@ cval *cval_eval(cave_env *e, cval *v)
     }
     if (v->type == cval_SYM)
     {
-        //print("symbol in eval");
         cval *x = cave_env_get(e, v);
-       
-        //printf("symbol:%s\n", v->sym);
         cval_del(v);
-        //cval_println(v);
         return x;
     }
     // Evaluate S-expressions

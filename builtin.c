@@ -298,9 +298,7 @@ cval* builtin_while(cave_env* e, cval* a){
     //Checks that the inputs are of the correct value
     assert_type("while", a, 0, cval_QEXPR);
     assert_type("while", a, 1, cval_QEXPR);
-
     //Mark both expressions as evaluable
-    cval *x;
     cval *condition = cval_copy(a->cell[0]);
     condition->type = cval_SEXPR;
     cval *condi = cval_eval(e,condition);
@@ -311,30 +309,26 @@ cval* builtin_while(cave_env* e, cval* a){
         }
     }
     cval *body;
-    int counter = 0;
     while(test){
-        counter++;
-        if(counter > 10){
-            break;
-        }
-        //cval_print((cval_eval(e, cond)));
         body = cval_get(a, 1);
         body->type = cval_SEXPR;
-        free(condition);
+        cval_del(condition);
         condition = cval_copy(a->cell[0]);
+       
         condition->type = cval_SEXPR;
-        condi = cval_eval(e, body);
+
+        cval_eval(e, body);
+        condi = cval_eval(e, condition);
+        
         if(condi->type == cval_NUM){
             if(condi->num == 0){
                 test = 0;
             }
         }
-        //cond = cval_eval(condition);
     }
 
     cval_del(a);
-    x = cval_sexpr();
-    return x;
+    return cval_sexpr();
 }
 
 cval* builtin_while1(cave_env* e, cval* a){
