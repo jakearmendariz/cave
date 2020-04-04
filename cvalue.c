@@ -262,7 +262,7 @@ void cval_print(cval *v)
         printf("%s", v->sym);
         break;
     case cval_STR:
-        printf("");
+        print("");
         char* esc = malloc(strlen(v->str) + 1);
         strcpy(esc, v->str);
         print(esc);
