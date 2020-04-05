@@ -1,6 +1,6 @@
 (function {getDigits N b}{
     (def {power} 0)
-    (while { > (^ power b) N}{
+    (while { <= (^ power b) N}{
         def {power} (+ power 1)
     })
     (def {result} {})
@@ -14,7 +14,7 @@
             (def {product} (* c (^ b power)))
         })
         (def {c} {- c 1})
-        (def {N} (- N (* c (** b power))))
+        (def {N} (- N (* c (^ b power))))
         (append result c)
     })
 })

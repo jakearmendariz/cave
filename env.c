@@ -37,10 +37,10 @@ cval* cave_env_get(cave_env* e, cval* k) {
     /* Check if the stored string matches the symbol string */
     /* If it does, return a copy of the value */
     if (strcmp(e->syms[i], k->sym) == 0) {
-      return cval_copy(e->vals[i]);
-      
+      //return cval_copy(e->vals[i]);
       cval *cp = cval_copy(e->vals[i]);
-      cp->str = malloc(sizeof(k->sym)+1);
+      cp->sym = malloc(sizeof(k->sym)+1);
+      cp->num = 1;
       strcpy(cp->sym, k->sym);
       return cp;
       /*
@@ -151,6 +151,7 @@ void cave_env_add_builtins(cave_env *e)
     cave_env_add_builtin(e, "-", builtin_sub);
     cave_env_add_builtin(e, "*", builtin_mul);
     cave_env_add_builtin(e, "/", builtin_div);
+    cave_env_add_builtin(e, "^", builtin_pow);
 
     /* Variable Functions */
     cave_env_add_builtin(e, "def",  builtin_def);
@@ -168,6 +169,7 @@ void cave_env_add_builtins(cave_env *e)
     cave_env_add_builtin(e, ">",  builtin_gt);
     cave_env_add_builtin(e, "<",  builtin_lt);
     cave_env_add_builtin(e, ">=", builtin_ge);
+    cave_env_add_builtin(e, "<=", builtin_le);
 
     //string functions
     cave_env_add_builtin(e, "load",  builtin_load);

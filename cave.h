@@ -157,6 +157,8 @@ cval *builtin_mul(cave_env *e, cval *a);
 
 cval *builtin_div(cave_env *e, cval *a);
 
+cval *builtin_pow(cave_env *e, cval *a);
+
 void cave_env_add_builtin(cave_env *e, char *name, lbuiltin func);
 
 void cave_env_add_builtins(cave_env *e);
@@ -184,6 +186,8 @@ cval* builtin_gt(cave_env* e, cval* a);
 cval* builtin_lt(cave_env* e, cval* a);
 
 cval* builtin_ge(cave_env* e, cval* a);
+
+cval* builtin_le(cave_env* e, cval* a);
 
 cval* builtin_load(cave_env* e, cval* a);
 

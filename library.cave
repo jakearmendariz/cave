@@ -2,18 +2,12 @@
 
 (function{add x y} {+ x y})
 
-(function{var x , b , a} 
-{
-    def {x} a
-})
-
 #Finds the sum of all elements in array
 (function{sum_array arr}
 {
     (def {x} 0)
     (for {i in arr}{
         (def {x} (+ x i))
-        (print i)
     })
     (print x)
 })

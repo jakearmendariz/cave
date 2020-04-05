@@ -65,6 +65,14 @@ cval *builtin_op(cave_env *e, cval *a, char *op)
         {
             x->num *= y->num;
         }
+        if (strcmp(op, "^") == 0)
+        {
+            long result = 1;
+            for(int i = 0; i < y->num; i++){
+                result *= x->num;
+            }
+            x->num = result;
+        }
         if (strcmp(op, "/") == 0)
         {
             if (y->num == 0)
@@ -197,6 +205,11 @@ cval *builtin_mul(cave_env *e, cval *a)
 cval *builtin_div(cave_env *e, cval *a)
 {
     return builtin_op(e, a, "/");
+}
+
+cval *builtin_pow(cave_env *e, cval *a)
+{
+    return builtin_op(e, a, "^");
 }
 
 
@@ -407,6 +420,10 @@ cval* builtin_ge(cave_env* e, cval* a){
     return builtin_ord(e, a, ">=");
 }
 
+cval* builtin_le(cave_env* e, cval* a){
+    return builtin_ord(e, a, "<=");
+}
+
 cval* builtin_pe(cave_env* e, cval* a){
     return builtin_ord(e, a, "+=");
 }
@@ -545,7 +562,27 @@ cval* builtin_append(cave_env* e, cval* a) {
     pint(1);
     cval* x = cval_add(a->cell[0], a->cell[1]);
     pint(2);
-    cave_env_def(e, cval_sym(a->cell[0]->sym), x);
+    if(a->cell[0]->num == 1){
+        printf("%s\n", a->cell[0]->sym);
+        cave_env_def(e, cval_sym(a->cell[0]->sym), x);
+    }
+    pint(3);
+    //cval_del(a);
+    return x;
+}
+
+cval* builtin_preppend(cave_env* e, cval* a) {
+    printf("builtin_prepend\n\n");
+    assert_num("prepend", a, 2);
+    //Checks that the inputs are of the correct value
+    assert_type("prepend", a, 0, cval_QEXPR);
+    pint(1);
+    cval* x = cval_add(a->cell[0], a->cell[1]);
+    pint(2);
+    if(a->cell[0]->num == 1){
+        printf("%s\n", a->cell[0]->sym);
+        cave_env_def(e, cval_sym(a->cell[0]->sym), x);
+    }
     pint(3);
     //cval_del(a);
     return x;
