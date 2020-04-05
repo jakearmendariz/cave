@@ -153,6 +153,24 @@ cval *cval_add(cval *v, cval *x)
     return v;
 }
 
+
+//adds x to the list of cells
+cval *cval_add_at(cval *v, cval *x, int index)
+{
+    if(index >= v->count || index < 0){
+        return cval_err("Error: index out of bounds");
+    }
+    
+    v->cell = (cval **)realloc(v->cell, sizeof(cval *) * v->count);
+    for(int i = v->count; i < index; i--){
+        v->cell[i] = cval_copy(v->cell[i-1]);
+        cval_del(v->cell[i-1]);
+    }
+    v->cell[index] = x;
+    v->count++;
+    return v;
+}
+
 cval *cval_read_str(mpc_ast_t *t){
     /* Cut off the final quote character */
     t->contents[strlen(t->contents)-1] = '\0';
@@ -329,7 +347,7 @@ cval *cval_eval(cave_env *e, cval *v)
     if (v->type == cval_SEXPR)
     {
         //If it has any children, evaluate
-        print("S-expression");
+        //print("S-expression");
         return cval_eval_sexpr(e, v);
     }
     //else
@@ -492,10 +510,8 @@ cval* cval_lambda(cval* formals, cval* body) {
 cval* cval_call(cave_env* e, cval* f, cval* a){
     //If function is built in
     if(f->builtin){
-        print("builtin function - cval_call");
         return f->builtin(e, a);
     }
-    print("user-fed function - cval_call");
     int given = a->count;
     int total = f->formals->count;
     

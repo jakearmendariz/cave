@@ -52,7 +52,15 @@ int main(int argc, char **argv)
     print("Debug on:");
     //Adds functions
     cave_env_add_builtins(e);
-    builtin_load(e, cval_str("\"hello.a\""));
+    
+    cval* preload = cval_add(cval_sexpr(), cval_str("library.cave"));
+
+    cval* x = builtin_load(e, preload);
+
+    if (x->type == cval_ERR) { 
+        cval_println(x);
+    }
+    cval_del(x);
 
     //Supplied with list of files 
     if (argc >= 2) {
@@ -64,8 +72,9 @@ int main(int argc, char **argv)
             cval* x = builtin_load(e, args);
 
             if (x->type == cval_ERR) { cval_println(x); }
-                cval_del(x);
-            }
+            
+            cval_del(x);
+        }
     }
     else{
         while (1)

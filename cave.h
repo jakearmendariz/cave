@@ -105,6 +105,9 @@ cval *cval_read_str(mpc_ast_t *t);
 
 cval *cval_add(cval *v, cval *x);
 
+//Adds at a specific index
+cval *cval_add_at(cval *v, cval *x, int index);
+
 cval *cval_read(mpc_ast_t *t);
 
 cval* cval_lambda(cval* formals, cval* body);
@@ -187,6 +190,11 @@ cval* builtin_load(cave_env* e, cval* a);
 cval* builtin_print(cave_env* e, cval* a);
 
 cval* builtin_error(cave_env* e, cval* a);
+
+cval* builtin_insert(cave_env* e, cval* a);
+
+cval* builtin_append(cave_env* e, cval* a);
+
 
 //Enviorment function
 cave_env *cave_env_new(void);

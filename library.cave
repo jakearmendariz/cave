@@ -1,14 +1,14 @@
-(def {fun} (\ {args body} {def (head args) (\ (tail args) body)}))
+(def {function} (\ {args body} {def (head args) (\ (tail args) body)}))
 
-(fun{add x y} {+ x y})
+(function{add x y} {+ x y})
 
-(fun{var x , b , a} 
+(function{var x , b , a} 
 {
     def {x} a
 })
 
 #Finds the sum of all elements in array
-(fun{sum_array arr}
+(function{sum_array arr}
 {
     (def {x} 0)
     (for {i in arr}{
@@ -17,3 +17,5 @@
     })
     (print x)
 })
+
+

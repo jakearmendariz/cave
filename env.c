@@ -38,6 +38,11 @@ cval* cave_env_get(cave_env* e, cval* k) {
     /* If it does, return a copy of the value */
     if (strcmp(e->syms[i], k->sym) == 0) {
       return cval_copy(e->vals[i]);
+      
+      cval *cp = cval_copy(e->vals[i]);
+      cp->str = malloc(sizeof(k->sym)+1);
+      strcpy(cp->sym, k->sym);
+      return cp;
       /*
       printf("k->count:%d\n", k->count);
       if(strcmp(k->sym, "while") == 0){
@@ -168,4 +173,8 @@ void cave_env_add_builtins(cave_env *e)
     cave_env_add_builtin(e, "load",  builtin_load);
     cave_env_add_builtin(e, "error", builtin_error);
     cave_env_add_builtin(e, "print", builtin_print);
+
+    //array functions
+    cave_env_add_builtin(e, "append",  builtin_append);
+    cave_env_add_builtin(e, "insert", builtin_insert);
 }

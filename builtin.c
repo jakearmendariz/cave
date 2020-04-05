@@ -292,7 +292,7 @@ cval* builtin_for(cave_env* e, cval* a){
 
 
 cval *builtin_length(cave_env *e, cval *a){
-    return cval_num(a->count);
+    return cval_num(a->cell[0]->count);
 }
 
 //Problem in while loops: runs infinetly because it will not save variable that is incremented within
@@ -524,11 +524,43 @@ cval* builtin_load(cave_env* e, cval* a) {
         char *err_msg = mpc_err_string(r.error);
         mpc_err_delete(r.error);
         /* Create new error message using it */
-        cval* err = cval_err("Could not load Library %s", err_msg);
+        cval* err = cval_err("Could not load file: %s", err_msg);
         free(err_msg);
         cval_del(a);
 
         /* Cleanup and return error */
         return err;
     }
+}
+
+/**
+ * ARRAYS:
+ * Built in functions to handle ease of use with arrays
+ */
+cval* builtin_append(cave_env* e, cval* a) {
+    printf("builtin_append\n\n");
+    assert_num("append", a, 2);
+    //Checks that the inputs are of the correct value
+    assert_type("append", a, 0, cval_QEXPR);
+    pint(1);
+    cval* x = cval_add(a->cell[0], a->cell[1]);
+    pint(2);
+    cave_env_def(e, cval_sym(a->cell[0]->sym), x);
+    pint(3);
+    //cval_del(a);
+    return x;
+}
+
+
+/**
+ * add
+ */
+cval* builtin_insert(cave_env* e, cval* a) {
+    assert_num("insert", a, 3);
+    //Checks that the inputs are of the correct value
+    assert_type("insert", a, 0, cval_QEXPR);
+    assert_type("insert", a, 2, cval_NUM);
+    cval* x = cval_add_at(a->cell[0], a->cell[1], (int)a->cell[2]->num);
+    //cval_del(a);
+    return x;
 }

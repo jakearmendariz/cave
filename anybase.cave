@@ -1,0 +1,20 @@
+(function {getDigits N b}{
+    (def {power} 0)
+    (while { > (^ power b) N}{
+        def {power} (+ power 1)
+    })
+    (def {result} {})
+    (while {> N 0}{
+        (def {power} (- power 1))
+        (def {c} 0)
+        (def {product} 0)
+
+        (while {>= N product}{
+            (def {c} {+ c 1})
+            (def {product} (* c (^ b power)))
+        })
+        (def {c} {- c 1})
+        (def {N} (- N (* c (** b power))))
+        (append result c)
+    })
+})
