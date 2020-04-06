@@ -39,17 +39,13 @@ cval* cave_env_get(cave_env* e, cval* k) {
     if (strcmp(e->syms[i], k->sym) == 0) {
       //return cval_copy(e->vals[i]);
       cval *cp = cval_copy(e->vals[i]);
+      if(cp ->type == cval_NUM){
+        return cp;
+      }
       cp->sym = malloc(sizeof(k->sym)+1);
       cp->num = 1;
       strcpy(cp->sym, k->sym);
       return cp;
-      /*
-      printf("k->count:%d\n", k->count);
-      if(strcmp(k->sym, "while") == 0){
-        k->cell[0]->type = cval_QEXPR;
-      }
-      return x;
-      */
     }
   }
   //if parent is not null, then check it for the symbol
